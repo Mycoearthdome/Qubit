@@ -3,10 +3,13 @@ package main
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/cmplx"
+	"os"
 	"sync"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -225,40 +228,93 @@ func secureRandomFloat64() float64 {
 	return randomFloat
 }
 
+func RebuildFromTick(tick int, q1 Qubit) Qubit {
+
+	var q3 Qubit
+
+	switch tick {
+	case 1:
+		return q1
+	case 2:
+		q3.Alpha = q1.Theta
+		q3.Omega = q1.Alpha
+		q3.Beta = q1.Omega
+		q3.Theta = q1.Beta
+		return q3
+	case 3:
+		q3.Alpha = q1.Beta
+		q3.Omega = q1.Theta
+		q3.Beta = q1.Alpha
+		q3.Theta = q1.Omega
+		return q3
+	case 4:
+		q3.Alpha = q1.Omega
+		q3.Omega = q1.Beta
+		q3.Beta = q1.Theta
+		q3.Theta = q1.Alpha
+		return q3
+	default:
+		return q1
+	}
+}
+
 func main() {
+	JSON_OUT_FILENAME := "Qubits.JSON"
+	WriteBufferThreshold := 10000
+	dictQubit := make(map[int64][]Qubit)
 
 	for {
-		// QBit 1
-		var A1 float64 = secureRandomFloat64()
-		var A1i float64 = secureRandomFloat64()
-		var O1 float64 = secureRandomFloat64()
-		var O1i float64 = secureRandomFloat64()
-		var B1 float64 = secureRandomFloat64()
-		var B1i float64 = secureRandomFloat64()
-		var T1 float64 = secureRandomFloat64()
-		var T1i float64 = secureRandomFloat64()
+		for i := 0; i < WriteBufferThreshold; i++ {
+			var listQubit []Qubit
+			// QBit 1
+			var A1 float64 = secureRandomFloat64()
+			var A1i float64 = secureRandomFloat64()
+			var O1 float64 = secureRandomFloat64()
+			var O1i float64 = secureRandomFloat64()
+			var B1 float64 = secureRandomFloat64()
+			var B1i float64 = secureRandomFloat64()
+			var T1 float64 = secureRandomFloat64()
+			var T1i float64 = secureRandomFloat64()
 
-		//Qbit 2
-		var A2 float64 = secureRandomFloat64()
-		var A2i float64 = secureRandomFloat64()
-		var O2 float64 = secureRandomFloat64()
-		var O2i float64 = secureRandomFloat64()
-		var B2 float64 = secureRandomFloat64()
-		var B2i float64 = secureRandomFloat64()
-		var T2 float64 = secureRandomFloat64()
-		var T2i float64 = secureRandomFloat64()
+			//Qbit 2
+			var A2 float64 = secureRandomFloat64()
+			var A2i float64 = secureRandomFloat64()
+			var O2 float64 = secureRandomFloat64()
+			var O2i float64 = secureRandomFloat64()
+			var B2 float64 = secureRandomFloat64()
+			var B2i float64 = secureRandomFloat64()
+			var T2 float64 = secureRandomFloat64()
+			var T2i float64 = secureRandomFloat64()
 
-		// Initialize a qubit with some probability amplitudes
-		q1 := Qubit{Alpha: cmplx.Sqrt(complex(A1, A1i)), Omega: cmplx.Sqrt(complex(O1, O1i)), Beta: cmplx.Sqrt(complex(B1, B1i)), Theta: cmplx.Sqrt(complex(T1, T1i))}
-		q2 := Qubit{Alpha: cmplx.Sqrt(complex(A2, A2i)), Omega: cmplx.Sqrt(complex(O2, O2i)), Beta: cmplx.Sqrt(complex(B2, B2i)), Theta: cmplx.Sqrt(complex(T2, T2i))}
+			// Initialize a qubit with some probability amplitudes
+			q1 := Qubit{Alpha: cmplx.Sqrt(complex(A1, A1i)), Omega: cmplx.Sqrt(complex(O1, O1i)), Beta: cmplx.Sqrt(complex(B1, B1i)), Theta: cmplx.Sqrt(complex(T1, T1i))}
+			q2 := Qubit{Alpha: cmplx.Sqrt(complex(A2, A2i)), Omega: cmplx.Sqrt(complex(O2, O2i)), Beta: cmplx.Sqrt(complex(B2, B2i)), Theta: cmplx.Sqrt(complex(T2, T2i))}
 
-		Result, tick := CollapsingQubits(q1, q2)
-		if Result {
-			fmt.Println("They Collapsed to their respective states.")
-			fmt.Printf("tick=%d, q1=%v", tick, q1)
-			fmt.Printf("tick=%d, q2=%v", tick, q2)
-			break
+			Result, tick := CollapsingQubits(q1, q2)
+			if Result {
+				listQubit = append(listQubit, RebuildFromTick(tick, q1), q2)
+				dictQubit[time.Now().UnixNano()] = listQubit
+				fmt.Println("They Collapsed to their respective states.")
+				fmt.Printf("tick=%d, q1=%v\n", tick, RebuildFromTick(tick, q1))
+				fmt.Printf("tick=%d, q2=%v\n", tick, q2)
+				break
+			}
+
+		}
+		//Threshold ran...Let's write our data.
+		jsonData, err := json.Marshal(dictQubit)
+		if err != nil {
+			panic(err)
+		}
+		file, err := os.Create(JSON_OUT_FILENAME)
+		if err != nil {
+			panic(err)
 		}
 
+		_, err = file.Write(jsonData)
+		if err != nil {
+			panic(err)
+		}
+		file.Close()
 	}
 }
