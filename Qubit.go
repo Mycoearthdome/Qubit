@@ -249,6 +249,7 @@ func main() {
 	var WriteBufferThreshold int64 = 10000
 	dictQubit := make(map[int64][]QubitRI)
 	var CollectedQubits int64
+	var TotalCollectedQubits int64
 	for {
 		for i := 0; CollectedQubits < WriteBufferThreshold; i++ {
 			var listQubit []QubitRI
@@ -311,11 +312,13 @@ func main() {
 
 				listQubit = append(listQubit, q3RI, q2RI)
 				dictQubit[time.Now().UnixNano()] = listQubit
-				fmt.Printf("\rFound Qubits = %d", CollectedQubits)
+				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				CollectedQubits++
+				TotalCollectedQubits++
 			}
 		}
-		fmt.Printf("...Saving ... %d Qubits to file %s\n", CollectedQubits, JSON_OUT_FILENAME)
+		CollectedQubits = 0
+		fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSON_OUT_FILENAME)
 		jsonData, err := json.Marshal(dictQubit)
 		if err != nil {
 			panic(err)
