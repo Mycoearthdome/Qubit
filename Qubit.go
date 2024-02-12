@@ -14,160 +14,148 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Qubit struct { //
-	//gives a qubit structures as :                           |	A O\		/A O		/|
-	Alpha complex128 // probability amplitude for |0⟩    0	  |			+ 			=  / |
-	Beta  complex128 // probability amplitude for |1⟩    1    | B T/		\B T		 |
-	Omega complex128 // probability amplitude for 0|⟩      0  |							 |
-	Theta complex128 // probability amplitude for 1|)      1  |                        -----
+type Qubit struct {
+	Alpha complex128 // probability amplitude for |0⟩
+	Beta  complex128 // probability amplitude for |1⟩
+	Omega complex128 // probability amplitude for 0|⟩
+	Theta complex128 // probability amplitude for 1|⟩
+}
 
+type QubitRI struct {
+	AlphaReal float64
+	AlphaImag float64
+	BetaReal  float64
+	BetaImag  float64
+	OmegaReal float64
+	OmegaImag float64
+	ThetaReal float64
+	ThetaImag float64
+}
+
+func normalizeComplex(s0 complex128) complex128 {
+	magnitude := cmplx.Abs(s0)
+	return s0 / complex(magnitude, 0)
 }
 
 func AddComplex(s0 complex128, s1 complex128) complex128 {
-
-	var retAddedReal float64
-	var retAddedImag float64
-
-	realPart1 := real(s0)
-	imagPart1 := imag(s0)
-	realPart2 := real(s1)
-	imagPart2 := imag(s1)
+	realPart1, imagPart1 := real(s0), imag(s0)
+	realPart2, imagPart2 := real(s1), imag(s1)
 
 	if !math.IsNaN(realPart1) && !math.IsNaN(realPart2) && !math.IsNaN(imagPart1) && !math.IsNaN(imagPart2) {
 		if !math.IsInf(realPart1, 0) && !math.IsInf(realPart2, 0) && !math.IsInf(imagPart1, 0) && !math.IsInf(imagPart2, 0) {
+
 			Real1 := decimal.NewFromFloat(realPart1)
 			Imag1 := decimal.NewFromFloat(imagPart1)
 			Real2 := decimal.NewFromFloat(realPart2)
 			Imag2 := decimal.NewFromFloat(imagPart2)
 
-			AddedReal := Real1.Add(Real2).String()
-			AddedImag := Imag1.Add(Imag2).String()
+			AddedReal := Real1.Add(Real2)
+			AddedImag := Imag1.Add(Imag2)
 
-			if len(AddedReal) == 1 && int(AddedReal[0]) == 49 { // 1
-				retAddedReal = 1.0
-			} else {
-				retAddedReal = float64(0)
-			}
-			if len(AddedImag) == 1 && int(AddedReal[0]) == 49 { // 1
-				retAddedImag = 1.0
-			} else {
-				retAddedImag = float64(0)
-			}
+			AddedRealF, _ := AddedReal.Float64()
+			AddedImagF, _ := AddedImag.Float64()
+
+			return complex(AddedRealF, AddedImagF)
 		}
 	}
-	return complex(retAddedReal, retAddedImag)
+	return s1
 }
 
-func Tick(wg *sync.WaitGroup, Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B complex128, Q2B complex128, Q1T complex128, Q2T complex128, Moment int, magnitude chan bool, phase chan bool) {
+func Tick(wg *sync.WaitGroup, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T complex128, Moment int, magnitude, phase chan bool) {
+	defer wg.Done()
 
-	var Found bool = false
+	var mag bool = false
+	var pha bool = false
+
 	CollapseThreshold := complex(1, 1)
 
 	switch Moment {
-
 	case 1:
-		if cmplx.Abs(AddComplex(Q1A, Q2A)) == cmplx.Abs(CollapseThreshold) {
-			if cmplx.Abs(AddComplex(Q1O, Q2O)) == cmplx.Abs(CollapseThreshold) {
-				if cmplx.Abs(AddComplex(Q1B, Q2B)) == cmplx.Abs(CollapseThreshold) {
-					if cmplx.Abs(AddComplex(Q1T, Q2T)) == cmplx.Abs(CollapseThreshold) {
-						fmt.Println("Magnitude match")
-						magnitude <- true
-					}
-				}
-			}
+		if cmplx.Abs(AddComplex(Q1A, Q2A)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1O, Q2O)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1B, Q2B)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1T, Q2T)) == cmplx.Abs(CollapseThreshold) {
+			//fmt.Println("Magnitude match")
+			mag = true
 		}
 
-		if cmplx.Phase(AddComplex(Q1A, Q2A)) == cmplx.Phase(CollapseThreshold) {
-			if cmplx.Phase(AddComplex(Q1O, Q2O)) == cmplx.Phase(CollapseThreshold) {
-				if cmplx.Phase(AddComplex(Q1B, Q2B)) == cmplx.Phase(CollapseThreshold) {
-					if cmplx.Phase(AddComplex(Q1T, Q2T)) == cmplx.Phase(CollapseThreshold) {
-						fmt.Println("Phase match")
-						phase <- true
-						Found = true
-					}
-				}
-			}
+		if cmplx.Phase(AddComplex(Q1A, Q2A)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1O, Q2O)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1B, Q2B)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1T, Q2T)) == cmplx.Phase(CollapseThreshold) {
+			//fmt.Println("Phase match")
+			pha = true
 		}
 	case 2:
-		if cmplx.Abs(AddComplex(Q1T, Q2A)) == cmplx.Abs(CollapseThreshold) {
-			if cmplx.Abs(AddComplex(Q1A, Q2O)) == cmplx.Abs(CollapseThreshold) {
-				if cmplx.Abs(AddComplex(Q1O, Q2B)) == cmplx.Abs(CollapseThreshold) {
-					if cmplx.Abs(AddComplex(Q1B, Q2T)) == cmplx.Abs(CollapseThreshold) {
-						fmt.Println("Magnitude match")
-						magnitude <- true
-					}
-				}
-			}
+		if cmplx.Abs(AddComplex(Q1T, Q2A)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1A, Q2O)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1O, Q2B)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1B, Q2T)) == cmplx.Abs(CollapseThreshold) {
+			//fmt.Println("Magnitude match")
+			mag = true
 		}
 
-		if cmplx.Phase(AddComplex(Q1T, Q2A)) == cmplx.Phase(CollapseThreshold) {
-			if cmplx.Phase(AddComplex(Q1A, Q2O)) == cmplx.Phase(CollapseThreshold) {
-				if cmplx.Phase(AddComplex(Q1O, Q2B)) == cmplx.Phase(CollapseThreshold) {
-					if cmplx.Phase(AddComplex(Q1B, Q2T)) == cmplx.Phase(CollapseThreshold) {
-						fmt.Println("Phase match")
-						phase <- true
-						Found = true
-					}
-				}
-			}
+		if cmplx.Phase(AddComplex(Q1T, Q2A)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1A, Q2O)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1O, Q2B)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1B, Q2T)) == cmplx.Phase(CollapseThreshold) {
+			//fmt.Println("Phase match")
+			pha = true
 		}
 	case 3:
-		if cmplx.Abs(AddComplex(Q1B, Q2A)) == cmplx.Abs(CollapseThreshold) {
-			if cmplx.Abs(AddComplex(Q1T, Q2O)) == cmplx.Abs(CollapseThreshold) {
-				if cmplx.Abs(AddComplex(Q1A, Q2B)) == cmplx.Abs(CollapseThreshold) {
-					if cmplx.Abs(AddComplex(Q1O, Q2T)) == cmplx.Abs(CollapseThreshold) {
-						fmt.Println("Magnitude match")
-						magnitude <- true
-					}
-				}
-			}
+		if cmplx.Abs(AddComplex(Q1B, Q2A)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1T, Q2O)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1A, Q2B)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1O, Q2T)) == cmplx.Abs(CollapseThreshold) {
+			//fmt.Println("Magnitude match")
+			mag = true
 		}
 
-		if cmplx.Phase(AddComplex(Q1B, Q2A)) == cmplx.Phase(CollapseThreshold) {
-			if cmplx.Phase(AddComplex(Q1T, Q2O)) == cmplx.Phase(CollapseThreshold) {
-				if cmplx.Phase(AddComplex(Q1A, Q2B)) == cmplx.Phase(CollapseThreshold) {
-					if cmplx.Phase(AddComplex(Q1O, Q2T)) == cmplx.Phase(CollapseThreshold) {
-						fmt.Println("Phase match")
-						phase <- true
-						Found = true
-					}
-				}
-			}
+		if cmplx.Phase(AddComplex(Q1B, Q2A)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1T, Q2O)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1A, Q2B)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1O, Q2T)) == cmplx.Phase(CollapseThreshold) {
+			//fmt.Println("Phase match")
+			pha = true
 		}
 	case 4:
-		if cmplx.Abs(AddComplex(Q1O, Q2A)) == cmplx.Abs(CollapseThreshold) {
-			if cmplx.Abs(AddComplex(Q1B, Q2O)) == cmplx.Abs(CollapseThreshold) {
-				if cmplx.Abs(AddComplex(Q1T, Q2B)) == cmplx.Abs(CollapseThreshold) {
-					if cmplx.Abs(AddComplex(Q1A, Q2T)) == cmplx.Abs(CollapseThreshold) {
-						fmt.Println("Magnitude match")
-						magnitude <- true
-					}
-				}
-			}
+		if cmplx.Abs(AddComplex(Q1O, Q2A)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1B, Q2O)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1T, Q2B)) == cmplx.Abs(CollapseThreshold) &&
+			cmplx.Abs(AddComplex(Q1A, Q2T)) == cmplx.Abs(CollapseThreshold) {
+			//fmt.Println("Magnitude match")
+			mag = true
 		}
 
-		if cmplx.Phase(AddComplex(Q1O, Q2A)) == cmplx.Phase(CollapseThreshold) {
-			if cmplx.Phase(AddComplex(Q1B, Q2O)) == cmplx.Phase(CollapseThreshold) {
-				if cmplx.Phase(AddComplex(Q1T, Q2B)) == cmplx.Phase(CollapseThreshold) {
-					if cmplx.Phase(AddComplex(Q1A, Q2T)) == cmplx.Phase(CollapseThreshold) {
-						fmt.Println("Phase match")
-						phase <- true
-						Found = true
-					}
-				}
-			}
+		if cmplx.Phase(AddComplex(Q1O, Q2A)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1B, Q2O)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1T, Q2B)) == cmplx.Phase(CollapseThreshold) &&
+			cmplx.Phase(AddComplex(Q1A, Q2T)) == cmplx.Phase(CollapseThreshold) {
+			//fmt.Println("Phase match")
+			pha = true
 		}
-
 	}
-	if !Found {
+
+	if !mag && !pha {
 		magnitude <- false
 		phase <- false
+	} else {
+		if !mag && pha {
+			magnitude <- false
+			phase <- false
+		}
+		if mag && !pha {
+			magnitude <- false
+			phase <- false
+		}
+		if mag && pha {
+			magnitude <- true
+			phase <- true
+		}
 	}
-	wg.Done()
 }
 
 func CollapsingQubits(q1 Qubit, q2 Qubit) (bool, int) {
-
 	var wg sync.WaitGroup
 
 	magnitude1 := make(chan bool, 1)
@@ -179,14 +167,15 @@ func CollapsingQubits(q1 Qubit, q2 Qubit) (bool, int) {
 	phase3 := make(chan bool, 1)
 	phase4 := make(chan bool, 1)
 
-	Q1A := cmplx.Pow(q1.Alpha, 2)
-	Q2A := cmplx.Pow(q2.Alpha, 2)
-	Q1O := cmplx.Pow(q1.Omega, 2)
-	Q2O := cmplx.Pow(q2.Omega, 2)
-	Q1B := cmplx.Pow(q1.Beta, 2)
-	Q2B := cmplx.Pow(q2.Beta, 2)
-	Q1T := cmplx.Pow(q1.Theta, 2)
-	Q2T := cmplx.Pow(q2.Theta, 2)
+	Q1A, Q2A := cmplx.Pow(q1.Alpha, 2), cmplx.Pow(q2.Alpha, 2)
+	Q1O, Q2O := cmplx.Pow(q1.Omega, 2), cmplx.Pow(q2.Omega, 2)
+	Q1B, Q2B := cmplx.Pow(q1.Beta, 2), cmplx.Pow(q2.Beta, 2)
+	Q1T, Q2T := cmplx.Pow(q1.Theta, 2), cmplx.Pow(q2.Theta, 2)
+
+	Q1A, Q2A = normalizeComplex(Q1A), normalizeComplex(Q2A)
+	Q1O, Q2O = normalizeComplex(Q1O), normalizeComplex(Q2O)
+	Q1B, Q2B = normalizeComplex(Q1B), normalizeComplex(Q2B)
+	Q1T, Q2T = normalizeComplex(Q1T), normalizeComplex(Q2T)
 
 	wg.Add(4)
 
@@ -213,16 +202,13 @@ func CollapsingQubits(q1 Qubit, q2 Qubit) (bool, int) {
 }
 
 func secureRandomFloat64() float64 {
-
 	var randomBytes [8]byte
 
-	// Read 8 random bytes from crypto/rand
 	_, err := rand.Read(randomBytes[:])
 	if err != nil {
 		panic(err)
 	}
 
-	// Convert the random bytes to a float64 in the range [0.0, 1.0)
 	randomFloat := math.Float64frombits(binary.BigEndian.Uint64(randomBytes[:]))
 
 	return randomFloat
@@ -260,12 +246,13 @@ func RebuildFromTick(tick int, q1 Qubit) Qubit {
 
 func main() {
 	JSON_OUT_FILENAME := "Qubits.JSON"
-	WriteBufferThreshold := 10000
-	dictQubit := make(map[int64][]Qubit)
-
+	var WriteBufferThreshold int64 = 10000
+	dictQubit := make(map[int64][]QubitRI)
+	var CollectedQubits int64
 	for {
-		for i := 0; i < WriteBufferThreshold; i++ {
-			var listQubit []Qubit
+		for i := 0; CollectedQubits < WriteBufferThreshold; i++ {
+			var listQubit []QubitRI
+
 			// QBit 1
 			var A1 float64 = secureRandomFloat64()
 			var A1i float64 = secureRandomFloat64()
@@ -286,26 +273,54 @@ func main() {
 			var T2 float64 = secureRandomFloat64()
 			var T2i float64 = secureRandomFloat64()
 
-			// Initialize a qubit with some probability amplitudes
-			q1 := Qubit{Alpha: cmplx.Sqrt(complex(A1, A1i)), Omega: cmplx.Sqrt(complex(O1, O1i)), Beta: cmplx.Sqrt(complex(B1, B1i)), Theta: cmplx.Sqrt(complex(T1, T1i))}
-			q2 := Qubit{Alpha: cmplx.Sqrt(complex(A2, A2i)), Omega: cmplx.Sqrt(complex(O2, O2i)), Beta: cmplx.Sqrt(complex(B2, B2i)), Theta: cmplx.Sqrt(complex(T2, T2i))}
+			q1 := Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
+				Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
+				Beta:  cmplx.Sqrt(normalizeComplex(complex(B1, B1i))),
+				Theta: cmplx.Sqrt(normalizeComplex(complex(T1, T1i)))}
+
+			q2 := Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
+				Omega: cmplx.Sqrt(normalizeComplex(complex(O2, O2i))),
+				Beta:  cmplx.Sqrt(normalizeComplex(complex(B2, B2i))),
+				Theta: cmplx.Sqrt(normalizeComplex(complex(T2, T2i)))}
 
 			Result, tick := CollapsingQubits(q1, q2)
 			if Result {
-				listQubit = append(listQubit, RebuildFromTick(tick, q1), q2)
-				dictQubit[time.Now().UnixNano()] = listQubit
-				fmt.Println("They Collapsed to their respective states.")
-				fmt.Printf("tick=%d, q1=%v\n", tick, RebuildFromTick(tick, q1))
-				fmt.Printf("tick=%d, q2=%v\n", tick, q2)
-				break
-			}
 
+				q3 := RebuildFromTick(tick, q1)
+
+				q3RI := QubitRI{
+					AlphaReal: real(q3.Alpha),
+					AlphaImag: imag(q3.Alpha),
+					OmegaReal: real(q3.Omega),
+					OmegaImag: imag(q3.Omega),
+					BetaReal:  real(q3.Beta),
+					BetaImag:  imag(q3.Beta),
+					ThetaReal: real(q3.Theta),
+					ThetaImag: imag(q3.Theta),
+				}
+				q2RI := QubitRI{
+					AlphaReal: real(q2.Alpha),
+					AlphaImag: imag(q2.Alpha),
+					OmegaReal: real(q2.Omega),
+					OmegaImag: imag(q2.Omega),
+					BetaReal:  real(q2.Beta),
+					BetaImag:  imag(q2.Beta),
+					ThetaReal: real(q2.Theta),
+					ThetaImag: imag(q2.Theta),
+				}
+
+				listQubit = append(listQubit, q3RI, q2RI)
+				dictQubit[time.Now().UnixNano()] = listQubit
+				fmt.Printf("\rFound Qubits = %d", CollectedQubits)
+				CollectedQubits++
+			}
 		}
-		//Threshold ran...Let's write our data.
+		fmt.Printf("...Saving ... %d Qubits to file %s\n", CollectedQubits, JSON_OUT_FILENAME)
 		jsonData, err := json.Marshal(dictQubit)
 		if err != nil {
 			panic(err)
 		}
+
 		file, err := os.Create(JSON_OUT_FILENAME)
 		if err != nil {
 			panic(err)
@@ -315,6 +330,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
 		file.Close()
 	}
+
 }
