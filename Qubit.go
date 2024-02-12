@@ -4,14 +4,19 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"math"
 	"math/cmplx"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
 
 type Qubit struct {
@@ -244,16 +249,19 @@ func RebuildFromTick(tick int, q1 Qubit) Qubit {
 	}
 }
 
-func main() {
-	JSON_OUT_FILENAME := "Qubits.JSON"
-	var WriteBufferThreshold int64 = 10000
-	dictQubit := make(map[int64][]QubitRI)
+func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 	var CollectedQubits int64
 	var TotalCollectedQubits int64
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	dictQubit := make(map[int64][]QubitRI)
 	for {
-		for i := 0; CollectedQubits < WriteBufferThreshold; i++ {
+		if m.Sys-m.Alloc < 102400 { // 100MB
+			break
+		}
+		for i := 0; CollectedQubits < WriteBuffer; i++ {
 			var listQubit []QubitRI
-
+			var Then int64 = time.Now().UnixNano()
 			// QBit 1
 			var A1 float64 = secureRandomFloat64()
 			var A1i float64 = secureRandomFloat64()
@@ -311,20 +319,20 @@ func main() {
 				}
 
 				listQubit = append(listQubit, q3RI, q2RI)
-				dictQubit[time.Now().UnixNano()] = listQubit
+				dictQubit[time.Now().UnixNano()-Then] = listQubit
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				CollectedQubits++
 				TotalCollectedQubits++
 			}
 		}
 		CollectedQubits = 0
-		fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSON_OUT_FILENAME)
+		fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSONfilename)
 		jsonData, err := json.Marshal(dictQubit)
 		if err != nil {
 			panic(err)
 		}
 
-		file, err := os.Create(JSON_OUT_FILENAME)
+		file, err := os.Create(JSONfilename)
 		if err != nil {
 			panic(err)
 		}
@@ -335,6 +343,144 @@ func main() {
 		}
 
 		file.Close()
+	}
+	return dictQubit
+}
+
+func readFileIntoBytes(filePath string) ([]byte, error) {
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("ERROR OPENNING FILE: %v", err)
+	}
+	defer file.Close()
+
+	// Get the file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("ERROR GETTING FILE INFO: %v", err)
+	}
+	fileSize := fileInfo.Size()
+
+	// Read the entire file into a byte slice
+	fileContent := make([]byte, fileSize)
+	_, err = file.Read(fileContent)
+	if err != nil {
+		return nil, fmt.Errorf("ERROR READING FILE: %v", err)
+	}
+
+	return fileContent, nil
+}
+
+func ReadJSONtoDict(JSONfilename string, dictQubit map[int64][]QubitRI) {
+	data, err := readFileIntoBytes(JSONfilename)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &dictQubit)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func cumulativeSum(numbers []int64) []int64 {
+	var cumSum []int64
+	var sum int64 = 0
+
+	for _, num := range numbers {
+		sum += num
+		cumSum = append(cumSum, sum)
+	}
+
+	return cumSum
+}
+
+func main() {
+
+	var WriteBufferThreshold int64 = 10000
+	dictQubit := make(map[int64][]QubitRI)
+	var listNanoseconds []int64
+
+	var w string
+	var r string
+
+	flag.StringVar(&w, "w", "", "Write Qubits")
+	flag.StringVar(&r, "r", "", "Read Qubits")
+
+	flag.Parse()
+
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: Qubit -w/-r <Qubits file>")
+		os.Exit(1)
+	}
+
+	if w != "" {
+		JSON_OUT_FILENAME := w
+		dictQubit = WriteQubits(JSON_OUT_FILENAME, WriteBufferThreshold)
+	} else {
+		if r != "" {
+			JSON_OUT_FILENAME := r
+			ReadJSONtoDict(JSON_OUT_FILENAME, dictQubit)
+		} else {
+			fmt.Println("Usage: Qubit -w/-r <Qubits file>")
+			os.Exit(1)
+		}
+	}
+
+	for timestamp := range dictQubit {
+		/*
+			q1 := Qubit{Alpha: complex(listQubit[0].AlphaReal, listQubit[0].AlphaImag),
+				Beta:  complex(listQubit[0].BetaReal, listQubit[0].BetaImag),
+				Omega: complex(listQubit[0].OmegaReal, listQubit[0].OmegaImag),
+				Theta: complex(listQubit[0].ThetaReal, listQubit[0].ThetaImag),
+			}
+
+			q2 := Qubit{Alpha: complex(listQubit[1].AlphaReal, listQubit[1].AlphaImag),
+				Beta:  complex(listQubit[1].BetaReal, listQubit[1].BetaImag),
+				Omega: complex(listQubit[1].OmegaReal, listQubit[1].OmegaImag),
+				Theta: complex(listQubit[1].ThetaReal, listQubit[1].ThetaImag),
+			}
+		*/
+
+		listNanoseconds = append(listNanoseconds, timestamp)
+	}
+	// Calculate the cumulative sum
+	cumSum := cumulativeSum(listNanoseconds)
+
+	// Create a new plot
+	p := plot.New()
+
+	// Create scatter plot for original data
+	pts := make(plotter.XYs, len(listNanoseconds))
+	for i, num := range listNanoseconds {
+		pts[i].X = float64(i + 1)
+		pts[i].Y = float64(num)
+	}
+	scatter, err := plotter.NewScatter(pts)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create line plot for cumulative sum
+	line, err := plotter.NewLine(plotter.XYs{
+		{X: 1, Y: float64(cumSum[0])},
+		{X: float64(len(listNanoseconds)), Y: float64(cumSum[len(listNanoseconds)-1])},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Add the scatter and line plots to the plot
+	p.Add(scatter, line)
+
+	// Set axis labels
+	p.X.Label.Text = "Index"
+	p.Y.Label.Text = "Values"
+
+	// Save the plot to a PNG file
+	if err := p.Save(6*vg.Inch, 4*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
+		panic(err)
 	}
 
 }
