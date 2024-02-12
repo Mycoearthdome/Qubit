@@ -35,6 +35,7 @@ type QubitRI struct {
 	OmegaImag float64
 	ThetaReal float64
 	ThetaImag float64
+	Tick      int
 }
 
 func normalizeComplex(s0 complex128) complex128 {
@@ -255,6 +256,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	dictQubit := make(map[int64][]QubitRI)
+	var Duration int64
 	for {
 		if m.Sys-m.Alloc < 102400 { // 100MB
 			break
@@ -306,6 +308,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 					BetaImag:  imag(q3.Beta),
 					ThetaReal: real(q3.Theta),
 					ThetaImag: imag(q3.Theta),
+					Tick:      tick,
 				}
 				q2RI := QubitRI{
 					AlphaReal: real(q2.Alpha),
@@ -316,10 +319,11 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 					BetaImag:  imag(q2.Beta),
 					ThetaReal: real(q2.Theta),
 					ThetaImag: imag(q2.Theta),
+					Tick:      tick,
 				}
-
+				Duration = time.Now().UnixNano() - Then
 				listQubit = append(listQubit, q3RI, q2RI)
-				dictQubit[time.Now().UnixNano()-Then] = listQubit
+				dictQubit[Duration] = listQubit
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				CollectedQubits++
 				TotalCollectedQubits++
@@ -396,11 +400,63 @@ func cumulativeSum(numbers []int64) []int64 {
 	return cumSum
 }
 
+func Graph(lstTickOrQubits []int64, tick bool) {
+
+	// Calculate the cumulative sum
+	cumSum := cumulativeSum(lstTickOrQubits)
+
+	// Create a new plot
+	p := plot.New()
+
+	// Create scatter plot for original data
+	pts := make(plotter.XYs, len(lstTickOrQubits))
+	for i, num := range lstTickOrQubits {
+		pts[i].X = float64(i + 1)
+		pts[i].Y = float64(num)
+	}
+	scatter, err := plotter.NewScatter(pts)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create line plot for cumulative sum
+	line, err := plotter.NewLine(plotter.XYs{
+		{X: 1, Y: float64(cumSum[0])},
+		{X: float64(len(lstTickOrQubits)), Y: float64(cumSum[len(lstTickOrQubits)-1])},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Add the scatter and line plots to the plot
+	p.Add(scatter, line)
+
+	// Set axis labels
+	p.X.Label.Text = "Index"
+	p.Y.Label.Text = "Values"
+
+	// Save the plot to a PNG file
+
+	if !tick {
+		if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
+			panic(err)
+		}
+		printf("Saved Qubits graph... Qubits_cumulative_sum_plot.png")
+	} else {
+		if err := p.Save(12*vg.Inch, 8*vg.Inch, "Ticks_cumulative_sum_plot.png"); err != nil {
+			panic(err)
+		}
+		printf("Saved Ticks graph... Ticks_cumulative_sum_plot.png")
+	}
+
+}
+
 func main() {
 
-	var WriteBufferThreshold int64 = 10000
+	var WriteBufferThreshold int64 = 1000
 	dictQubit := make(map[int64][]QubitRI)
 	var listNanoseconds []int64
+	var listTick []int64
 
 	var w string
 	var r string
@@ -428,7 +484,7 @@ func main() {
 		}
 	}
 
-	for timestamp := range dictQubit {
+	for timestamp, listQubit := range dictQubit {
 		/*
 			q1 := Qubit{Alpha: complex(listQubit[0].AlphaReal, listQubit[0].AlphaImag),
 				Beta:  complex(listQubit[0].BetaReal, listQubit[0].BetaImag),
@@ -442,45 +498,10 @@ func main() {
 				Theta: complex(listQubit[1].ThetaReal, listQubit[1].ThetaImag),
 			}
 		*/
-
+		listTick = append(listTick, int64(listQubit[0].Tick))
 		listNanoseconds = append(listNanoseconds, timestamp)
 	}
-	// Calculate the cumulative sum
-	cumSum := cumulativeSum(listNanoseconds)
 
-	// Create a new plot
-	p := plot.New()
-
-	// Create scatter plot for original data
-	pts := make(plotter.XYs, len(listNanoseconds))
-	for i, num := range listNanoseconds {
-		pts[i].X = float64(i + 1)
-		pts[i].Y = float64(num)
-	}
-	scatter, err := plotter.NewScatter(pts)
-	if err != nil {
-		panic(err)
-	}
-
-	// Create line plot for cumulative sum
-	line, err := plotter.NewLine(plotter.XYs{
-		{X: 1, Y: float64(cumSum[0])},
-		{X: float64(len(listNanoseconds)), Y: float64(cumSum[len(listNanoseconds)-1])},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	// Add the scatter and line plots to the plot
-	p.Add(scatter, line)
-
-	// Set axis labels
-	p.X.Label.Text = "Index"
-	p.Y.Label.Text = "Values"
-
-	// Save the plot to a PNG file
-	if err := p.Save(6*vg.Inch, 4*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
-		panic(err)
-	}
-
+	Graph(listNanoseconds, false)
+	Graph(listTick, true)
 }
