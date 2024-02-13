@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"gonum.org/v1/gonum/stat"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -389,9 +390,9 @@ func ReadJSONtoDict(JSONfilename string, dictQubit map[int64][]QubitRI) {
 	}
 }
 
-func cumulativeSum(numbers []int64) []int64 {
-	var cumSum []int64
-	var sum int64 = 0
+func cumulativeSum(numbers []float64) []float64 {
+	var cumSum []float64
+	var sum float64 = 0.0
 
 	for _, num := range numbers {
 		sum += num
@@ -401,11 +402,11 @@ func cumulativeSum(numbers []int64) []int64 {
 	return cumSum
 }
 
-func Graph(lstQubits []int64, lstTick []int64) {
+func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 
 	// Calculate the cumulative sum
-	cumSumTick := cumulativeSum(lstTick)
-	cumSumQubits := cumulativeSum(lstQubits)
+	//cumSumTick := cumulativeSum(lstTick)
+	//cumSumQubits := cumulativeSum(lstQubits)
 
 	// Create a new plot
 	p := plot.New()
@@ -413,13 +414,13 @@ func Graph(lstQubits []int64, lstTick []int64) {
 	ptsLineQubits := make(plotter.XYs, len(cumSumQubits))
 	for i, num := range cumSumQubits {
 		ptsLineQubits[i].X = float64(i)
-		ptsLineQubits[i].Y = float64(num)
+		ptsLineQubits[i].Y = num
 	}
 
-	ptsLineTick := make(plotter.XYs, len(cumSumTick))
-	for i, num := range cumSumTick {
+	ptsLineTick := make(plotter.XYs, len(adjustedTicks))
+	for i, num := range adjustedTicks {
 		ptsLineTick[i].X = float64(i)
-		ptsLineTick[i].Y = float64(num) * math.Pow(math.Pi, math.Pi*math.Phi*2) //it's probably an exponential curve.
+		ptsLineTick[i].Y = num
 	}
 
 	// Create lines
@@ -451,7 +452,30 @@ func Graph(lstQubits []int64, lstTick []int64) {
 		panic(err)
 	}
 	fmt.Printf("Saved Qubits and Ticks graph... Qubits_Ticks_cumulative_sum_plot.png\n")
+}
 
+func logValues(values []float64) []float64 {
+	loggedValues := make([]float64, len(values))
+	for i, v := range values {
+		loggedValues[i] = math.Log(v)
+	}
+	return loggedValues
+}
+
+func scaleValues(values []float64, scale float64) []float64 {
+	scaledValues := make([]float64, len(values))
+	for i, v := range values {
+		scaledValues[i] = v * scale
+	}
+	return scaledValues
+}
+
+func int64ToFloat64Slice(input []int64) []float64 {
+	result := make([]float64, len(input))
+	for i, v := range input {
+		result[i] = float64(v)
+	}
+	return result
 }
 
 func main() {
@@ -505,6 +529,60 @@ func main() {
 		listNanoseconds = append(listNanoseconds, timestamp)
 	}
 
-	Graph(listNanoseconds, listTick)
+	listTickFloat64 := int64ToFloat64Slice(listTick)
+	listNanosecondsFloat64 := int64ToFloat64Slice(listNanoseconds)
+
+	// Calculate the cumulative sum
+	cumSumTick := cumulativeSum(listTickFloat64)
+	cumSumQubits := cumulativeSum(listNanosecondsFloat64)
+
+	var x []float64
+	var yQubits []float64
+	var yTicks []float64
+
+	for i := 0; i < len(listNanoseconds); i++ {
+		x = append(x, float64(i))
+	}
+	for i := 0; i < len(listNanoseconds); i++ {
+		yQubits = append(yQubits, cumSumQubits[i])
+	}
+	for i := 0; i < len(listTick); i++ {
+		yTicks = append(yTicks, cumSumTick[i])
+	}
+
+	xQubits := x
+	xTicks := x
+
+	// Perform linear regression for curve 1
+	a1, _ := stat.LinearRegression(xQubits, logValues(yQubits), nil, false)
+
+	// Perform linear regression for curve 2
+	a2, _ := stat.LinearRegression(xTicks, logValues(yTicks), nil, false)
+
+	// Calculate the difference between coefficients
+	aDiff := math.Exp(a1 - a2)
+
+	fmt.Printf("Scale Factor Difference: %.2f\n", aDiff)
+	adjustedTicks := scaleValues(yTicks, aDiff)
+
+	//for i := 1; i < len(cumSumQubits); i++ {
+	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", cumSumQubits[i], adjustedTicks[i])
+	//	time.Sleep(time.Second)
+	//}
+
+	/////TEST IT
+	//var formula float64 = 1 * 0.05 + //math.Pow(math.Pi, math.Pi*math.Phi*2)
+
+	Graph(cumSumQubits, adjustedTicks)
+
+	//for i := 1; i < len(cumSumQubits); i++ {
+	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[i]), (xTicks[i] * (float64(cumSumTick[i])*interceptDiff + (slopeDiff * -1))))
+	//	time.Sleep(time.Second)
+	//}
+	//if float64(cumSumQubits[1]) == (float64(cumSumTick[1])*interceptDiff + slopeDiff) {
+	//	break
+	//} else {
+	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[1]), (float64(cumSumTick[1])))
+	//}
 
 }
