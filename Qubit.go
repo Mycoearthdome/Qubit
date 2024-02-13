@@ -562,7 +562,7 @@ func main() {
 	// Calculate the difference between coefficients
 	aDiff := math.Exp(a1 - a2)
 
-	fmt.Printf("Scale Factor Difference: %.2f\n", aDiff)
+	//fmt.Printf("Scale Factor Difference: %.2f\n", aDiff)
 	adjustedTicks := scaleValues(yTicks, aDiff)
 
 	//for i := 1; i < len(cumSumQubits); i++ {
