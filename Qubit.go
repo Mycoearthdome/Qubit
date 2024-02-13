@@ -419,7 +419,7 @@ func Graph(lstQubits []int64, lstTick []int64) {
 	ptsLineTick := make(plotter.XYs, len(cumSumTick))
 	for i, num := range cumSumTick {
 		ptsLineTick[i].X = float64(i + 1)
-		ptsLineTick[i].Y = float64(num) * math.Pow(2, 16.79) // to adjust to the values of cumSumQubits
+		ptsLineTick[i].Y = float64(num) * math.Pow(math.Pi, math.Pi*math.Phi*2) //it's probably an exponential curve.
 	}
 
 	// Create lines
