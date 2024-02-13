@@ -440,7 +440,7 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	lineTicks.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255} // Blue
 
 	// Add the scatter and line plots to the plot
-	p.Add(lineQubits, lineTicks)
+	p.Add(lineQubits) //, lineTicks)
 
 	// Set axis labels
 	p.X.Label.Text = "Index"
@@ -476,6 +476,53 @@ func int64ToFloat64Slice(input []int64) []float64 {
 		result[i] = float64(v)
 	}
 	return result
+}
+
+func Regress(listQubits []float64, listTick []float64, SkipCumulativeSums bool) ([]float64, []float64) {
+
+	var cumSumTick []float64 = listTick
+	var cumSumQubits []float64 = listQubits
+	var a1 float64
+	var a2 float64
+	//var b1 float64
+	//var b2 float64
+
+	if !SkipCumulativeSums {
+		// Calculate the cumulative sum
+		cumSumTick = cumulativeSum(listTick)
+		cumSumQubits = cumulativeSum(listQubits)
+	}
+
+	var x []float64
+	var yQubits []float64
+	var yTicks []float64
+
+	for i := 0; i < len(listQubits); i++ {
+		x = append(x, float64(i))
+	}
+	for i := 0; i < len(listQubits); i++ {
+		yQubits = append(yQubits, cumSumQubits[i])
+	}
+	for i := 0; i < len(listTick); i++ {
+		yTicks = append(yTicks, cumSumTick[i])
+	}
+
+	xQubits := x
+	xTicks := x
+
+	// Perform linear regression for curve 1
+	a1, _ = stat.LinearRegression(xQubits, logValues(yQubits), nil, false)
+
+	// Perform linear regression for curve 2
+	a2, _ = stat.LinearRegression(xTicks, logValues(yTicks), nil, false)
+
+	// Calculate the difference between coefficients
+	aDiff := math.Exp(a1 - a2)
+
+	//fmt.Printf("Scale Factor Difference: %.2f\n", aDiff)
+	adjustedTicks := scaleValues(yTicks, aDiff)
+
+	return cumSumQubits, adjustedTicks
 }
 
 func main() {
@@ -532,53 +579,18 @@ func main() {
 	listTickFloat64 := int64ToFloat64Slice(listTick)
 	listNanosecondsFloat64 := int64ToFloat64Slice(listNanoseconds)
 
-	// Calculate the cumulative sum
-	cumSumTick := cumulativeSum(listTickFloat64)
-	cumSumQubits := cumulativeSum(listNanosecondsFloat64)
+	CumSumQubits, adjustedTicks := Regress(listNanosecondsFloat64, listTickFloat64, true)
+	//CumSumQubits, adjustedTicks = Regress(CumSumQubits, adjustedTicks, false)
 
-	var x []float64
-	var yQubits []float64
-	var yTicks []float64
-
-	for i := 0; i < len(listNanoseconds); i++ {
-		x = append(x, float64(i))
-	}
-	for i := 0; i < len(listNanoseconds); i++ {
-		yQubits = append(yQubits, cumSumQubits[i])
-	}
-	for i := 0; i < len(listTick); i++ {
-		yTicks = append(yTicks, cumSumTick[i])
-	}
-
-	xQubits := x
-	xTicks := x
-
-	// Perform linear regression for curve 1
-	a1, _ := stat.LinearRegression(xQubits, logValues(yQubits), nil, false)
-
-	// Perform linear regression for curve 2
-	a2, _ := stat.LinearRegression(xTicks, logValues(yTicks), nil, false)
-
-	// Calculate the difference between coefficients
-	aDiff := math.Exp(a1 - a2)
-
-	//fmt.Printf("Scale Factor Difference: %.2f\n", aDiff)
-	adjustedTicks := scaleValues(yTicks, aDiff)
-
-	//for i := 1; i < len(cumSumQubits); i++ {
-	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", cumSumQubits[i], adjustedTicks[i])
-	//	time.Sleep(time.Second)
-	//}
-
-	/////TEST IT
+	/////TEST IT\\\\\\
 	//var formula float64 = 1 * 0.05 + //math.Pow(math.Pi, math.Pi*math.Phi*2)
 
-	Graph(cumSumQubits, adjustedTicks)
+	Graph(CumSumQubits, adjustedTicks)
 
-	//for i := 1; i < len(cumSumQubits); i++ {
-	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[i]), (xTicks[i] * (float64(cumSumTick[i])*interceptDiff + (slopeDiff * -1))))
-	//	time.Sleep(time.Second)
-	//}
+	for i := 1; i < len(CumSumQubits); i++ {
+		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
+		time.Sleep(time.Second)
+	}
 	//if float64(cumSumQubits[1]) == (float64(cumSumTick[1])*interceptDiff + slopeDiff) {
 	//	break
 	//} else {
