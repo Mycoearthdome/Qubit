@@ -412,13 +412,13 @@ func Graph(lstQubits []int64, lstTick []int64) {
 
 	ptsLineQubits := make(plotter.XYs, len(cumSumQubits))
 	for i, num := range cumSumQubits {
-		ptsLineQubits[i].X = float64(i + 1)
+		ptsLineQubits[i].X = float64(i)
 		ptsLineQubits[i].Y = float64(num)
 	}
 
 	ptsLineTick := make(plotter.XYs, len(cumSumTick))
 	for i, num := range cumSumTick {
-		ptsLineTick[i].X = float64(i + 1)
+		ptsLineTick[i].X = float64(i)
 		ptsLineTick[i].Y = float64(num) * math.Pow(math.Pi, math.Pi*math.Phi*2) //it's probably an exponential curve.
 	}
 
