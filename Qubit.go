@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image/color"
 	"math"
 	"math/cmplx"
 	"os"
@@ -400,36 +401,45 @@ func cumulativeSum(numbers []int64) []int64 {
 	return cumSum
 }
 
-func Graph(lstTickOrQubits []int64, tick bool) {
+func Graph(lstQubits []int64, lstTick []int64) {
 
 	// Calculate the cumulative sum
-	cumSum := cumulativeSum(lstTickOrQubits)
+	cumSumTick := cumulativeSum(lstTick)
+	cumSumQubits := cumulativeSum(lstQubits)
 
 	// Create a new plot
 	p := plot.New()
 
-	// Create scatter plot for original data
-	pts := make(plotter.XYs, len(lstTickOrQubits))
-	for i, num := range lstTickOrQubits {
-		pts[i].X = float64(i + 1)
-		pts[i].Y = float64(num)
+	ptsLineQubits := make(plotter.XYs, len(cumSumQubits))
+	for i, num := range cumSumQubits {
+		ptsLineQubits[i].X = float64(i + 1)
+		ptsLineQubits[i].Y = float64(num)
 	}
-	scatter, err := plotter.NewScatter(pts)
+
+	ptsLineTick := make(plotter.XYs, len(cumSumTick))
+	for i, num := range cumSumTick {
+		ptsLineTick[i].X = float64(i + 1)
+		ptsLineTick[i].Y = float64(num) * math.Pow(2, 16.79) // to adjust to the values of cumSumQubits
+	}
+
+	// Create lines
+	lineQubits, err := plotter.NewLine(ptsLineQubits)
+	if err != nil {
+		panic(err)
+	}
+	lineTicks, err := plotter.NewLine(ptsLineTick)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create line plot for cumulative sum
-	line, err := plotter.NewLine(plotter.XYs{
-		{X: 1, Y: float64(cumSum[0])},
-		{X: float64(len(lstTickOrQubits)), Y: float64(cumSum[len(lstTickOrQubits)-1])},
-	})
-	if err != nil {
-		panic(err)
-	}
+	// Set color for Line 1
+	lineQubits.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red
+
+	// Set color for Line 2
+	lineTicks.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255} // Blue
 
 	// Add the scatter and line plots to the plot
-	p.Add(scatter, line)
+	p.Add(lineQubits, lineTicks)
 
 	// Set axis labels
 	p.X.Label.Text = "Index"
@@ -437,17 +447,10 @@ func Graph(lstTickOrQubits []int64, tick bool) {
 
 	// Save the plot to a PNG file
 
-	if !tick {
-		if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
-			panic(err)
-		}
-		printf("Saved Qubits graph... Qubits_cumulative_sum_plot.png")
-	} else {
-		if err := p.Save(12*vg.Inch, 8*vg.Inch, "Ticks_cumulative_sum_plot.png"); err != nil {
-			panic(err)
-		}
-		printf("Saved Ticks graph... Ticks_cumulative_sum_plot.png")
+	if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_Ticks_cumulative_sum_plot.png"); err != nil {
+		panic(err)
 	}
+	fmt.Printf("Saved Qubits and Ticks graph... Qubits_Ticks_cumulative_sum_plot.png\n")
 
 }
 
@@ -502,6 +505,6 @@ func main() {
 		listNanoseconds = append(listNanoseconds, timestamp)
 	}
 
-	Graph(listNanoseconds, false)
-	Graph(listTick, true)
+	Graph(listNanoseconds, listTick)
+
 }
