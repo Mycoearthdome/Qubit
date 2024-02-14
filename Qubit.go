@@ -43,6 +43,7 @@ type QubitRI struct {
 	ThetaReal float64
 	ThetaImag float64
 	Tick      int
+	Timestamp int64
 }
 
 ///// CREDITS ----> github.com/DylanMeeus/GoAudio/
@@ -1610,14 +1611,14 @@ func Tick(wg *sync.WaitGroup, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T complex128,
 func CollapsingQubits(q1 Qubit, q2 Qubit) (bool, int) {
 	var wg sync.WaitGroup
 
-	magnitude1 := make(chan bool, 1)
+	//magnitude1 := make(chan bool, 1)
 	magnitude2 := make(chan bool, 1)
-	magnitude3 := make(chan bool, 1)
-	magnitude4 := make(chan bool, 1)
-	phase1 := make(chan bool, 1)
+	//magnitude3 := make(chan bool, 1)
+	//magnitude4 := make(chan bool, 1)
+	//phase1 := make(chan bool, 1)
 	phase2 := make(chan bool, 1)
-	phase3 := make(chan bool, 1)
-	phase4 := make(chan bool, 1)
+	//phase3 := make(chan bool, 1)
+	//phase4 := make(chan bool, 1)
 
 	Q1A, Q2A := cmplx.Pow(q1.Alpha, 2), cmplx.Pow(q2.Alpha, 2)
 	Q1O, Q2O := cmplx.Pow(q1.Omega, 2), cmplx.Pow(q2.Omega, 2)
@@ -1629,27 +1630,27 @@ func CollapsingQubits(q1 Qubit, q2 Qubit) (bool, int) {
 	Q1B, Q2B = normalizeComplex(Q1B), normalizeComplex(Q2B)
 	Q1T, Q2T = normalizeComplex(Q1T), normalizeComplex(Q2T)
 
-	wg.Add(4)
+	wg.Add(1)
 
-	go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 1, magnitude1, phase1)
-	go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 2, magnitude2, phase2)
-	go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 3, magnitude3, phase3)
-	go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 4, magnitude4, phase4)
+	//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 1, magnitude1, phase1)
+	go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 2, magnitude2, phase2) //TODO:Quantify...Happens most often here.
+	//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 3, magnitude3, phase3)
+	//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 4, magnitude4, phase4)
 
 	wg.Wait()
 
-	if <-magnitude1 && <-phase1 {
-		return true, 1
-	}
+	//if <-magnitude1 && <-phase1 {
+	//	return true, 1
+	//}
 	if <-magnitude2 && <-phase2 {
 		return true, 2
 	}
-	if <-magnitude3 && <-phase3 {
-		return true, 3
-	}
-	if <-magnitude4 && <-phase4 {
-		return true, 4
-	}
+	//if <-magnitude3 && <-phase3 {
+	//	return true, 3
+	//}
+	//if <-magnitude4 && <-phase4 {
+	//	return true, 4
+	//}
 	return false, 0
 }
 
@@ -1696,20 +1697,22 @@ func RebuildFromTick(tick int, q1 Qubit) Qubit {
 	}
 }
 
-func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
+func WriteQubits(JSONfilename string, WriteBuffer int64) [][]QubitRI {
 	var CollectedQubits int64
 	var TotalCollectedQubits int64
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	dictQubit := make(map[int64][]QubitRI)
+	//dictQubit := make(map[int64][]QubitRI)
 	var Duration int64
+	var listQubit [][]QubitRI
+	var QubitsRICombo []QubitRI
 	for {
 		if m.Sys-m.Alloc < 102400 { // 100MB
 			break
 		}
 		for i := 0; CollectedQubits < WriteBuffer; i++ {
-			var listQubit []QubitRI
 			var Then int64 = time.Now().UnixNano()
+
 			// QBit 1
 			var A1 float64 = secureRandomFloat64()
 			var A1i float64 = secureRandomFloat64()
@@ -1742,7 +1745,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 
 			Result, tick := CollapsingQubits(q1, q2)
 			if Result {
-
+				Duration = time.Now().UnixNano() - Then //the time it takes to bring another collapse forward.
 				q3 := RebuildFromTick(tick, q1)
 
 				q3RI := QubitRI{
@@ -1755,6 +1758,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 					ThetaReal: real(q3.Theta),
 					ThetaImag: imag(q3.Theta),
 					Tick:      tick,
+					Timestamp: Duration,
 				}
 				q2RI := QubitRI{
 					AlphaReal: real(q2.Alpha),
@@ -1766,10 +1770,12 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 					ThetaReal: real(q2.Theta),
 					ThetaImag: imag(q2.Theta),
 					Tick:      tick,
+					Timestamp: Duration,
 				}
-				Duration = time.Now().UnixNano() - Then
-				listQubit = append(listQubit, q3RI, q2RI)
-				dictQubit[Duration] = listQubit
+
+				QubitsRICombo := append(QubitsRICombo, q3RI, q2RI)
+				listQubit = append(listQubit, QubitsRICombo)
+				//dictQubit[Duration] = listQubit //TODO: PRESERVE THE LIST AND DROP DICTIONARY...
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				CollectedQubits++
 				TotalCollectedQubits++
@@ -1777,7 +1783,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 		}
 		CollectedQubits = 0
 		fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSONfilename)
-		jsonData, err := json.Marshal(dictQubit)
+		jsonData, err := json.Marshal(listQubit)
 		if err != nil {
 			panic(err)
 		}
@@ -1794,7 +1800,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int64) map[int64][]QubitRI {
 
 		file.Close()
 	}
-	return dictQubit
+	return listQubit
 }
 
 func readFileIntoBytes(filePath string) ([]byte, error) {
@@ -1822,16 +1828,18 @@ func readFileIntoBytes(filePath string) ([]byte, error) {
 	return fileContent, nil
 }
 
-func ReadJSONtoDict(JSONfilename string, dictQubit map[int64][]QubitRI) {
+func ReadJSON(JSONfilename string) [][]QubitRI {
 	data, err := readFileIntoBytes(JSONfilename)
+	var lstQubit [][]QubitRI
 	if err != nil {
 		panic(err)
 	}
 
-	err = json.Unmarshal(data, &dictQubit)
+	err = json.Unmarshal(data, &lstQubit)
 	if err != nil {
 		panic(err)
 	}
+	return lstQubit
 }
 
 func cumulativeSum(numbers []float64) []float64 {
@@ -1861,10 +1869,10 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 		ptsLineQubits[i].Y = num
 	}
 
-	ptsLineTick := make(plotter.XYs, len(adjustedTicks))
+	ptsLineAdjustedTick := make(plotter.XYs, len(adjustedTicks))
 	for i, num := range adjustedTicks {
-		ptsLineTick[i].X = float64(i)
-		ptsLineTick[i].Y = num
+		ptsLineAdjustedTick[i].X = float64(i)
+		ptsLineAdjustedTick[i].Y = num
 	}
 
 	// Create lines
@@ -1872,7 +1880,8 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	if err != nil {
 		panic(err)
 	}
-	lineTicks, err := plotter.NewLine(ptsLineTick)
+
+	lineTicks, err := plotter.NewLine(ptsLineAdjustedTick)
 	if err != nil {
 		panic(err)
 	}
@@ -1881,14 +1890,14 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	lineQubits.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red
 
 	// Set color for Line 2
-	lineTicks.Color = color.RGBA{R: 0, G: 0, B: 255, A: 255} // Blue
+	lineTicks.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255} // Green
 
 	// Add the scatter and line plots to the plot
-	p.Add(lineQubits) //, lineTicks)
+	p.Add(lineQubits, lineTicks) //, lineTicks)
 
 	// Set axis labels
-	p.X.Label.Text = "Index"
-	p.Y.Label.Text = "Values"
+	p.X.Label.Text = "Time"
+	p.Y.Label.Text = "Qubits"
 
 	// Save the plot to a PNG file
 	fmt.Println("Building the plot data...Please wait!")
@@ -1977,12 +1986,79 @@ func Float642Frame(floats []float64) []Frame {
 	return Frames
 }
 
+func findRepeatingPattern(nums []int64) []int64 {
+	// Initialize the tortoise and hare pointers
+	tortoise, hare := nums[0], nums[0]
+
+	// Phase 1: Find the meeting point of tortoise and hare
+	for {
+		tortoise = nums[tortoise]
+		hare = nums[nums[hare]]
+
+		if tortoise == hare {
+			break
+		}
+	}
+
+	// Phase 2: Find the entrance to the cycle (repeating pattern)
+	tortoise = nums[0]
+	for tortoise != hare {
+		tortoise = nums[tortoise]
+		hare = nums[hare]
+	}
+
+	// The hare and tortoise are now at the entrance of the cycle
+	return []int64{tortoise}
+}
+
+func findRepeatingSeries(lst []int64) []int64 {
+	seen := make(map[int64]bool)
+	repeatingSeries := make(map[int64]bool)
+
+	for _, num := range lst {
+		if seen[num] {
+			repeatingSeries[num] = true
+		} else {
+			seen[num] = true
+		}
+	}
+
+	var result []int64
+	for num := range repeatingSeries {
+		result = append(result, num)
+	}
+
+	return result
+}
+
+func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []float64) {
+	var listQ1Real []float64
+	var listQ2Real []float64
+	var listQ1Imag []float64
+	var listQ2Imag []float64
+
+	for _, Qubits := range listQubits {
+		q1 := Qubits[0]
+		q2 := Qubits[1]
+		listQ1Real = append(listQ1Real, real(q1.Alpha), real(q1.Beta), real(q1.Omega), real(q1.Theta))
+		listQ2Real = append(listQ2Real, real(q2.Alpha), real(q2.Beta), real(q2.Omega), real(q2.Theta))
+		listQ1Imag = append(listQ1Imag, imag(q1.Alpha), imag(q1.Beta), imag(q1.Omega), imag(q1.Theta))
+		listQ2Imag = append(listQ2Imag, imag(q2.Alpha), imag(q2.Beta), imag(q2.Omega), imag(q2.Theta))
+
+	}
+
+	return listQ1Real, listQ1Imag, listQ2Real, listQ2Imag
+}
+
 func main() {
 
 	var WriteBufferThreshold int64 = 1000
-	dictQubit := make(map[int64][]QubitRI)
+	var lstQubit [][]QubitRI
+	var listQubits [][]Qubit
 	var listNanoseconds []int64
 	var listTick []int64
+	var q1 Qubit
+	var q2 Qubit
 
 	var w string
 	var r string
@@ -1999,48 +2075,61 @@ func main() {
 
 	if w != "" {
 		JSON_OUT_FILENAME := w
-		dictQubit = WriteQubits(JSON_OUT_FILENAME, WriteBufferThreshold)
+		lstQubit = WriteQubits(JSON_OUT_FILENAME, WriteBufferThreshold)
 	} else {
 		if r != "" {
 			JSON_OUT_FILENAME := r
-			ReadJSONtoDict(JSON_OUT_FILENAME, dictQubit)
+			lstQubit = ReadJSON(JSON_OUT_FILENAME)
 		} else {
 			fmt.Println("Usage: Qubit -w/-r <Qubits file>")
 			os.Exit(1)
 		}
 	}
 
-	for timestamp, listQubit := range dictQubit {
-		/*
-			q1 := Qubit{Alpha: complex(listQubit[0].AlphaReal, listQubit[0].AlphaImag),
-				Beta:  complex(listQubit[0].BetaReal, listQubit[0].BetaImag),
-				Omega: complex(listQubit[0].OmegaReal, listQubit[0].OmegaImag),
-				Theta: complex(listQubit[0].ThetaReal, listQubit[0].ThetaImag),
-			}
+	for _, Qubits := range lstQubit {
+		var Combination []Qubit
+		q1 = Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
+			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
+			Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
+			Theta: complex(Qubits[0].ThetaReal, Qubits[0].ThetaImag),
+		}
 
-			q2 := Qubit{Alpha: complex(listQubit[1].AlphaReal, listQubit[1].AlphaImag),
-				Beta:  complex(listQubit[1].BetaReal, listQubit[1].BetaImag),
-				Omega: complex(listQubit[1].OmegaReal, listQubit[1].OmegaImag),
-				Theta: complex(listQubit[1].ThetaReal, listQubit[1].ThetaImag),
-			}
-		*/
-		listTick = append(listTick, int64(listQubit[0].Tick))
-		listNanoseconds = append(listNanoseconds, timestamp)
+		q2 = Qubit{Alpha: complex(Qubits[1].AlphaReal, Qubits[1].AlphaImag),
+			Beta:  complex(Qubits[1].BetaReal, Qubits[1].BetaImag),
+			Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
+			Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
+		}
+
+		listTick = append(listTick, int64(Qubits[0].Tick))
+		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
+		Combination = append(Combination, q1, q2)
+		listQubits = append(listQubits, Combination)
 	}
+	//repeatingTickPattern := findRepeatingPattern(listTick)
+	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
+
+	//repeatingTickSeries := findRepeatingSeries(listTick)
+	//fmt.Printf("Repeating Tick series:%d\n", repeatingTickSeries)
 
 	listTickFloat64 := int64ToFloat64Slice(listTick)
 	listNanosecondsFloat64 := int64ToFloat64Slice(listNanoseconds)
 
-	CumSumQubits, adjustedTicks := Regress(listNanosecondsFloat64, listTickFloat64, true)
+	cumSumQubits, adjustedTicks := Regress(listNanosecondsFloat64, listTickFloat64, true)
 	//CumSumQubits, adjustedTicks = Regress(CumSumQubits, adjustedTicks, false)
 
 	/////TEST IT\\\\\\
 	//var formula float64 = 1 * 0.05 + //math.Pow(math.Pi, math.Pi*math.Phi*2)
 
-	Graph(CumSumQubits, adjustedTicks)
+	//listQ1Real, listQ1Imag, listQ2Real, listQ2Imag := QubitsToFloat64(listQubits)
+
+	//for i := 0; i < len(listQubits); i++ {
+	//	fmt.Printf("%.7fi%.7f + %.7fi%.7f = %v\n", listQ1Real[i], listQ1Imag[i], listQ2Real[i], listQ2Imag[i], AddComplex(complex(listQ1Real[i], listQ1Imag[i]), complex(listQ2Real[i], listQ2Imag[i])))
+	//}
+
+	Graph(cumSumQubits, adjustedTicks) //Graph(CumSumQubits, adjustedTicks)
 
 	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
-	WriteWaveFile(Float642Frame(listNanosecondsFloat64), WaveFmt, "Qubits.wav")
+	WriteWaveFile(Float642Frame(cumSumQubits), WaveFmt, "Qubits.wav")
 	fmt.Println("Saved...Qubits.wav.")
 
 	//for i := 1; i < len(CumSumQubits); i++ {
@@ -2052,5 +2141,4 @@ func main() {
 	//} else {
 	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[1]), (float64(cumSumTick[1])))
 	//}
-
 }
