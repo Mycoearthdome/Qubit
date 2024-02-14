@@ -1891,11 +1891,11 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	p.Y.Label.Text = "Values"
 
 	// Save the plot to a PNG file
-
-	if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_Ticks_cumulative_sum_plot.png"); err != nil {
+	fmt.Println("Building the plot data...Please wait!")
+	if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Saved Qubits and Ticks graph... Qubits_Ticks_cumulative_sum_plot.png\n")
+	fmt.Printf("Saved Qubits and Ticks graph... Qubits_cumulative_sum_plot.png\n")
 }
 
 func logValues(values []float64) []float64 {
@@ -2041,6 +2041,7 @@ func main() {
 
 	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
 	WriteWaveFile(Float642Frame(CumSumQubits), WaveFmt, "Qubits.wav")
+	fmt.Println("Saved...Qubits.wav.")
 
 	//for i := 1; i < len(CumSumQubits); i++ {
 	//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
