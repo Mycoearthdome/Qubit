@@ -1895,7 +1895,7 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Saved Qubits and Ticks graph... Qubits_cumulative_sum_plot.png\n")
+	fmt.Printf("Saved Qubits graph... Qubits_cumulative_sum_plot.png\n")
 }
 
 func logValues(values []float64) []float64 {
