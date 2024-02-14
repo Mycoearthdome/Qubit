@@ -2040,7 +2040,7 @@ func main() {
 	Graph(CumSumQubits, adjustedTicks)
 
 	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
-	WriteWaveFile(Float642Frame(CumSumQubits), WaveFmt, "Qubits.wav")
+	WriteWaveFile(Float642Frame(listNanosecondsFloat64), WaveFmt, "Qubits.wav")
 	fmt.Println("Saved...Qubits.wav.")
 
 	//for i := 1; i < len(CumSumQubits); i++ {
