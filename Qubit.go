@@ -2039,11 +2039,8 @@ func main() {
 
 	Graph(CumSumQubits, adjustedTicks)
 
-	Wave, _ := ReadWaveFile("Qubits.wav")
-
-	wfmt := Wave.WaveFmt
-
-	WriteWaveFile(Float642Frame(CumSumQubits), wfmt, "Qubits.wav")
+	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
+	WriteWaveFile(Float642Frame(CumSumQubits), WaveFmt, "Qubits.wav")
 
 	//for i := 1; i < len(CumSumQubits); i++ {
 	//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
