@@ -1611,8 +1611,6 @@ func Tick(Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B co
 }
 
 func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan chan bool, NumberCpu int, Originalq1 *[]Qubit, Originalq2 *[]Qubit) {
-	var q1 []Qubit
-	var q2 []Qubit
 
 	for i := 0; i < NumberCpu; i++ { // /4 if using the 4 phases
 		wg.Add(1)
@@ -1636,20 +1634,30 @@ func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan c
 		var T2 float64 = secureRandomFloat64()
 		var T2i float64 = secureRandomFloat64()
 
-		q1 = append(q1, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
+		*Originalq1 = append(*Originalq1, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
 			Beta:  cmplx.Sqrt(normalizeComplex(complex(B1, B1i))),
 			Theta: cmplx.Sqrt(normalizeComplex(complex(T1, T1i)))})
 
-		q2 = append(q2, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
+		*Originalq2 = append(*Originalq2, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O2, O2i))),
 			Beta:  cmplx.Sqrt(normalizeComplex(complex(B2, B2i))),
 			Theta: cmplx.Sqrt(normalizeComplex(complex(T2, T2i)))})
 
-		Q1A, Q2A := cmplx.Pow(q1[len(q1)-1].Alpha, 2), cmplx.Pow(q2[len(q2)-1].Alpha, 2)
-		Q1O, Q2O := cmplx.Pow(q1[len(q1)-1].Omega, 2), cmplx.Pow(q2[len(q2)-1].Omega, 2)
-		Q1B, Q2B := cmplx.Pow(q1[len(q1)-1].Beta, 2), cmplx.Pow(q2[len(q2)-1].Beta, 2)
-		Q1T, Q2T := cmplx.Pow(q1[len(q1)-1].Theta, 2), cmplx.Pow(q2[len(q2)-1].Theta, 2)
+		q1 := Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
+			Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
+			Beta:  cmplx.Sqrt(normalizeComplex(complex(B1, B1i))),
+			Theta: cmplx.Sqrt(normalizeComplex(complex(T1, T1i)))}
+
+		q2 := Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
+			Omega: cmplx.Sqrt(normalizeComplex(complex(O2, O2i))),
+			Beta:  cmplx.Sqrt(normalizeComplex(complex(B2, B2i))),
+			Theta: cmplx.Sqrt(normalizeComplex(complex(T2, T2i)))}
+
+		Q1A, Q2A := cmplx.Pow(q1.Alpha, 2), cmplx.Pow(q2.Alpha, 2)
+		Q1O, Q2O := cmplx.Pow(q1.Omega, 2), cmplx.Pow(q2.Omega, 2)
+		Q1B, Q2B := cmplx.Pow(q1.Beta, 2), cmplx.Pow(q2.Beta, 2)
+		Q1T, Q2T := cmplx.Pow(q1.Theta, 2), cmplx.Pow(q2.Theta, 2)
 
 		Q1A, Q2A = normalizeComplex(Q1A), normalizeComplex(Q2A)
 		Q1O, Q2O = normalizeComplex(Q1O), normalizeComplex(Q2O)
@@ -1663,19 +1671,23 @@ func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan c
 
 		wg.Done()
 	}
-	*Originalq1 = append(*Originalq1, q1...)
-	*Originalq2 = append(*Originalq2, q2...)
+
 }
 
 func secureRandomFloat64() float64 {
 	var randomBytes [8]byte
+	var randomFloat float64
+	for {
+		_, err := rand.Read(randomBytes[:])
+		if err != nil {
+			panic(err)
+		}
 
-	_, err := rand.Read(randomBytes[:])
-	if err != nil {
-		panic(err)
+		randomFloat = math.Float64frombits(binary.BigEndian.Uint64(randomBytes[:]))
+		if !math.IsNaN(randomFloat) {
+			break
+		}
 	}
-
-	randomFloat := math.Float64frombits(binary.BigEndian.Uint64(randomBytes[:]))
 
 	return randomFloat
 }
@@ -1771,8 +1783,10 @@ func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 					Timestamp: Duration,
 				}
 
-				QubitsRICombo := append(QubitsRICombo, q3RI, q2RI)
+				QubitsRICombo = append(QubitsRICombo, q3RI, q2RI)
+				fmt.Println(QubitsRICombo)
 				listQubit = append(listQubit, QubitsRICombo)
+				QubitsRICombo = nil
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				TotalCollectedQubits++
 				CollectedBits++
@@ -2057,7 +2071,7 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 
 func main() {
 
-	var WriteBufferThreshold int = 100
+	var WriteBufferThreshold int = 20
 	var lstQubit [][]QubitRI
 	var listQubits [][]Qubit
 	var listNanoseconds []int64
