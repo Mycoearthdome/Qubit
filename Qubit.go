@@ -2186,7 +2186,7 @@ func main() {
 	listTickFloat64 := int64ToFloat64Slice(listTick)
 	listNanosecondsFloat64 := int64ToFloat64Slice(listNanoseconds)
 
-	cumSumQubits, _ := Regress(listNanosecondsFloat64, listTickFloat64, true)
+	cumSumQubits, _ := Regress(listNanosecondsFloat64, listTickFloat64, true) // adjusted tick
 	//CumSumQubits, adjustedTicks = Regress(CumSumQubits, adjustedTicks, false)
 
 	/////TEST IT\\\\\\
