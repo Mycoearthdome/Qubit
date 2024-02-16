@@ -2105,7 +2105,9 @@ func main() {
 		}
 	}
 
-	for _, Qubits := range lstQubit {
+	var Foundq1 bool
+	var Foundq2 bool
+	for j, Qubits := range lstQubit {
 		var Combination []Qubit
 		q1 = Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
 			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
@@ -2121,9 +2123,44 @@ func main() {
 
 		listTick = append(listTick, int64(Qubits[0].Tick))
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
-		Combination = append(Combination, q1, q2)
-		listQubits = append(listQubits, Combination)
+
+		for i := j; i < len(lstQubit); i++ {
+			if i+1 <= len(lstQubit) {
+				if q1 == (Qubit{Alpha: complex(lstQubit[i][0].AlphaReal, lstQubit[i][0].AlphaImag),
+					Beta:  complex(lstQubit[i][0].BetaReal, lstQubit[i][0].BetaImag),
+					Omega: complex(lstQubit[i][0].OmegaReal, lstQubit[i][0].OmegaImag),
+					Theta: complex(lstQubit[i][0].ThetaReal, lstQubit[i][0].ThetaImag),
+				}) {
+					Foundq1 = true
+					for k := i; k < len(lstQubit); k++ {
+						if k+1 <= len(lstQubit) {
+							{
+								if q2 == (Qubit{Alpha: complex(lstQubit[i][1].AlphaReal, lstQubit[i][1].AlphaImag),
+									Beta:  complex(lstQubit[i][1].BetaReal, lstQubit[i][1].BetaImag),
+									Omega: complex(lstQubit[i][1].OmegaReal, lstQubit[i][1].OmegaImag),
+									Theta: complex(lstQubit[i][1].ThetaReal, lstQubit[i][1].ThetaImag),
+								}) {
+									Foundq2 = true
+									break
+								}
+							}
+						}
+					}
+					if Foundq1 && Foundq2 {
+						Combination = append(Combination, q1, q2)
+						listQubits = append(listQubits, Combination)
+						Foundq1 = false
+						Foundq2 = false
+					}
+				}
+			}
+		}
+
 	}
+	for i, Combo := range listQubits {
+		fmt.Printf("%d,:%v+%v\n\n", i, Combo[0], Combo[1])
+	}
+	fmt.Println("Unique Qubits harvested = ", len(listQubits))
 	//repeatingTickPattern := findRepeatingPattern(listTick)
 	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
 
