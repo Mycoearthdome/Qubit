@@ -2074,6 +2074,7 @@ func main() {
 	var WriteBufferThreshold int = 1000
 	var lstQubit [][]QubitRI
 	var listQubits [][]Qubit
+	var RepeatQubits [][]Qubit
 	var listNanoseconds []int64
 	var listTick []int64
 	var q1 Qubit
@@ -2109,6 +2110,7 @@ func main() {
 	var Foundq2 bool
 	for j, Qubits := range lstQubit {
 		var Combination []Qubit
+		var Repeat []Qubit
 		q1 = Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
 			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
 			Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
@@ -2148,23 +2150,35 @@ func main() {
 							}
 						}
 					}
+
 					if Foundq1 && Foundq2 {
+						Repeat = append(Repeat, q1, q2)
+						RepeatQubits = append(RepeatQubits, Repeat)
 						Foundq1 = false
 						Foundq2 = false
 					} else {
-						Combination = append(Combination, q1, q2)
-						listQubits = append(listQubits, Combination)
-						Foundq1 = false
-						Foundq2 = false
+						if !Foundq1 && !Foundq2 {
+							Combination = append(Combination, q1, q2)
+							listQubits = append(listQubits, Combination)
+						} else {
+							Foundq1 = false
+							Foundq2 = false
+						}
 					}
 				}
 			}
 		}
 
 	}
-	for i, Combo := range listQubits {
-		fmt.Printf("%d,:%v+%v\n\n", i, Combo[0], Combo[1])
+	fmt.Println("-==Repeated Qubits==-")
+	for i, Repeat := range RepeatQubits {
+		fmt.Printf("%d:%v+%v\n\n", i+1, Repeat[0], Repeat[1])
 	}
+	fmt.Println("-==Unique Qubits==-")
+	for i, Combo := range listQubits {
+		fmt.Printf("%d::%v+%v\n\n", i+1, Combo[0], Combo[1])
+	}
+	fmt.Println("Repeated Qubits harvested = ", len(RepeatQubits))
 	fmt.Println("Unique Qubits harvested = ", len(listQubits))
 	//repeatingTickPattern := findRepeatingPattern(listTick)
 	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
