@@ -2125,21 +2125,23 @@ func main() {
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
 
 		for i := j; i < len(lstQubit); i++ {
-			if i+1 <= len(lstQubit) {
-				if q1 == (Qubit{Alpha: complex(lstQubit[i][0].AlphaReal, lstQubit[i][0].AlphaImag),
-					Beta:  complex(lstQubit[i][0].BetaReal, lstQubit[i][0].BetaImag),
-					Omega: complex(lstQubit[i][0].OmegaReal, lstQubit[i][0].OmegaImag),
-					Theta: complex(lstQubit[i][0].ThetaReal, lstQubit[i][0].ThetaImag),
+			if i+1 < len(lstQubit) {
+				if q1 == (Qubit{Alpha: complex(lstQubit[i+1][0].AlphaReal, lstQubit[i+1][0].AlphaImag),
+					Beta:  complex(lstQubit[i+1][0].BetaReal, lstQubit[i+1][0].BetaImag),
+					Omega: complex(lstQubit[i+1][0].OmegaReal, lstQubit[i+1][0].OmegaImag),
+					Theta: complex(lstQubit[i+1][0].ThetaReal, lstQubit[i+1][0].ThetaImag),
 				}) {
+					//fmt.Print("Found q1...")
 					Foundq1 = true
 					for k := i; k < len(lstQubit); k++ {
-						if k+1 <= len(lstQubit) {
+						if k+1 < len(lstQubit) {
 							{
-								if q2 == (Qubit{Alpha: complex(lstQubit[i][1].AlphaReal, lstQubit[i][1].AlphaImag),
-									Beta:  complex(lstQubit[i][1].BetaReal, lstQubit[i][1].BetaImag),
-									Omega: complex(lstQubit[i][1].OmegaReal, lstQubit[i][1].OmegaImag),
-									Theta: complex(lstQubit[i][1].ThetaReal, lstQubit[i][1].ThetaImag),
+								if q2 == (Qubit{Alpha: complex(lstQubit[k+1][1].AlphaReal, lstQubit[k+1][1].AlphaImag),
+									Beta:  complex(lstQubit[k+1][1].BetaReal, lstQubit[k+1][1].BetaImag),
+									Omega: complex(lstQubit[k+1][1].OmegaReal, lstQubit[k+1][1].OmegaImag),
+									Theta: complex(lstQubit[k+1][1].ThetaReal, lstQubit[k+1][1].ThetaImag),
 								}) {
+									//fmt.Println("Found q2!-->", i)
 									Foundq2 = true
 									break
 								}
@@ -2147,6 +2149,9 @@ func main() {
 						}
 					}
 					if Foundq1 && Foundq2 {
+						Foundq1 = false
+						Foundq2 = false
+					} else {
 						Combination = append(Combination, q1, q2)
 						listQubits = append(listQubits, Combination)
 						Foundq1 = false
