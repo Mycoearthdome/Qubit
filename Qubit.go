@@ -2157,13 +2157,10 @@ func main() {
 						Foundq1 = false
 						Foundq2 = false
 					} else {
-						if !Foundq1 && !Foundq2 {
-							Combination = append(Combination, q1, q2)
-							listQubits = append(listQubits, Combination)
-						} else {
-							Foundq1 = false
-							Foundq2 = false
-						}
+						Combination = append(Combination, q1, q2)
+						listQubits = append(listQubits, Combination)
+						Foundq1 = false
+						Foundq2 = false
 					}
 				}
 			}
