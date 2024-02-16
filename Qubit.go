@@ -1514,11 +1514,12 @@ func AddComplex(s0 complex128, s1 complex128) complex128 {
 	return s1
 }
 
-func Tick(wg *sync.WaitGroup, Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B complex128, Q2B complex128, Q1T complex128, Q2T complex128, Moment int, magnitude chan bool, phase chan bool) {
-	defer wg.Done()
+func Tick(Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B complex128, Q2B complex128, Q1T complex128, Q2T complex128, Moment int, magnitude chan chan bool, phase chan chan bool) {
+
 	var mag bool = false
 	var pha bool = false
-
+	magnitude2 := make(chan bool, 1)
+	phase2 := make(chan bool, 1)
 	CollapseThreshold := complex(1, 1)
 
 	switch Moment {
@@ -1589,45 +1590,28 @@ func Tick(wg *sync.WaitGroup, Q1A complex128, Q2A complex128, Q1O complex128, Q2
 	}
 
 	if !mag && !pha {
-		magnitude <- false
-		phase <- false
+		magnitude2 <- false
+		phase2 <- false
 	} else {
 		if !mag && pha {
-			magnitude <- false
-			phase <- false
+			magnitude2 <- false
+			phase2 <- false
 		}
 		if mag && !pha {
-			magnitude <- false
-			phase <- false
+			magnitude2 <- false
+			phase2 <- false
 		}
 		if mag && pha {
-			fmt.Print("YEAH!")
-			magnitude <- true
-			phase <- true
+			magnitude2 <- true
+			phase2 <- true
 		}
 	}
-
+	magnitude <- magnitude2
+	phase <- phase2
 }
 
-func CollapsingQubits(listQubit *[][]QubitRI, CollectedQubits *int64, TotalCollectedQubits *int64) {
-	var wg sync.WaitGroup
+func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan chan bool, NumberCpu int, q1 []Qubit, q2 []Qubit) ([]Qubit, []Qubit) {
 
-	//magnitude1 := make(chan bool, 1)
-	//magnitude2 := make(chan bool, 1)
-	//magnitude3 := make(chan bool, 1)
-	//magnitude4 := make(chan bool, 1)
-	//phase1 := make(chan bool, 1)
-	//phase2 := make(chan bool, 1)
-	//phase3 := make(chan bool, 1)
-	//phase4 := make(chan bool, 1)
-	var NumberCpu int = runtime.NumCPU()
-	var q1 Qubit
-	var q2 Qubit
-	var Duration int64
-	var QubitsRICombo []QubitRI
-	var Then int64 = time.Now().UnixNano()
-	magnitude := make(chan bool, NumberCpu)
-	phase := make(chan bool, NumberCpu)
 	for i := 0; i < NumberCpu; i++ { // /4 if using the 4 phases
 		wg.Add(1)
 		// QBit 1
@@ -1650,20 +1634,20 @@ func CollapsingQubits(listQubit *[][]QubitRI, CollectedQubits *int64, TotalColle
 		var T2 float64 = secureRandomFloat64()
 		var T2i float64 = secureRandomFloat64()
 
-		q1 = Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
+		q1 = append(q1, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
 			Beta:  cmplx.Sqrt(normalizeComplex(complex(B1, B1i))),
-			Theta: cmplx.Sqrt(normalizeComplex(complex(T1, T1i)))}
+			Theta: cmplx.Sqrt(normalizeComplex(complex(T1, T1i)))})
 
-		q2 = Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
+		q2 = append(q2, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A2, A2i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O2, O2i))),
 			Beta:  cmplx.Sqrt(normalizeComplex(complex(B2, B2i))),
-			Theta: cmplx.Sqrt(normalizeComplex(complex(T2, T2i)))}
+			Theta: cmplx.Sqrt(normalizeComplex(complex(T2, T2i)))})
 
-		Q1A, Q2A := cmplx.Pow(q1.Alpha, 2), cmplx.Pow(q2.Alpha, 2)
-		Q1O, Q2O := cmplx.Pow(q1.Omega, 2), cmplx.Pow(q2.Omega, 2)
-		Q1B, Q2B := cmplx.Pow(q1.Beta, 2), cmplx.Pow(q2.Beta, 2)
-		Q1T, Q2T := cmplx.Pow(q1.Theta, 2), cmplx.Pow(q2.Theta, 2)
+		Q1A, Q2A := cmplx.Pow(q1[len(q1)-1].Alpha, 2), cmplx.Pow(q2[len(q2)-1].Alpha, 2)
+		Q1O, Q2O := cmplx.Pow(q1[len(q1)-1].Omega, 2), cmplx.Pow(q2[len(q2)-1].Omega, 2)
+		Q1B, Q2B := cmplx.Pow(q1[len(q1)-1].Beta, 2), cmplx.Pow(q2[len(q2)-1].Beta, 2)
+		Q1T, Q2T := cmplx.Pow(q1[len(q1)-1].Theta, 2), cmplx.Pow(q2[len(q2)-1].Theta, 2)
 
 		Q1A, Q2A = normalizeComplex(Q1A), normalizeComplex(Q2A)
 		Q1O, Q2O = normalizeComplex(Q1O), normalizeComplex(Q2O)
@@ -1671,51 +1655,12 @@ func CollapsingQubits(listQubit *[][]QubitRI, CollectedQubits *int64, TotalColle
 		Q1T, Q2T = normalizeComplex(Q1T), normalizeComplex(Q2T)
 
 		//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 1, magnitude1, phase1)
-		go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 2, magnitude, phase)
+		go Tick(Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 2, magnitude, phase)
 		//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 3, magnitude3, phase3)
 		//go Tick(&wg, Q1A, Q2A, Q1O, Q2O, Q1B, Q2B, Q1T, Q2T, 4, magnitude4, phase4)
+		wg.Done()
 	}
-	wg.Wait()
-
-	for j := 0; j < NumberCpu; j++ {
-		if <-magnitude && <-phase {
-			Duration = time.Now().UnixNano() - Then //the time it takes to bring another collapse forward.
-			q3 := RebuildFromTick(2, q1)
-
-			q3RI := QubitRI{
-				AlphaReal: real(q3.Alpha),
-				AlphaImag: imag(q3.Alpha),
-				OmegaReal: real(q3.Omega),
-				OmegaImag: imag(q3.Omega),
-				BetaReal:  real(q3.Beta),
-				BetaImag:  imag(q3.Beta),
-				ThetaReal: real(q3.Theta),
-				ThetaImag: imag(q3.Theta),
-				Tick:      2,
-				Timestamp: Duration,
-			}
-			q2RI := QubitRI{
-				AlphaReal: real(q2.Alpha),
-				AlphaImag: imag(q2.Alpha),
-				OmegaReal: real(q2.Omega),
-				OmegaImag: imag(q2.Omega),
-				BetaReal:  real(q2.Beta),
-				BetaImag:  imag(q2.Beta),
-				ThetaReal: real(q2.Theta),
-				ThetaImag: imag(q2.Theta),
-				Tick:      2,
-				Timestamp: Duration,
-			}
-
-			QubitsRICombo := append(QubitsRICombo, q3RI, q2RI)
-			*listQubit = append(*listQubit, QubitsRICombo)
-			fmt.Printf("\rFound Qubits = %d", *TotalCollectedQubits)
-			*CollectedQubits++
-			*TotalCollectedQubits++
-		}
-	}
-	close(magnitude)
-	close(phase)
+	return q1, q2
 }
 
 func secureRandomFloat64() float64 {
@@ -1761,40 +1706,98 @@ func RebuildFromTick(tick int, q1 Qubit) Qubit {
 	}
 }
 
-func WriteQubits(JSONfilename string, WriteBuffer int64) [][]QubitRI {
-
+func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
+	var wg sync.WaitGroup
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	var listQubit [][]QubitRI
-	var CollectedQubits int64
+	var q1 []Qubit
+	var q2 []Qubit
+	var Duration int64
+	var QubitsRICombo []QubitRI
+	var Then int64 = time.Now().UnixNano()
+	var NumberCpu int = runtime.NumCPU()
+	var CollectedBits int64 = 0
 	var TotalCollectedQubits int64
+	magnitude := make(chan chan bool, NumberCpu*WriteBuffer)
+	phase := make(chan chan bool, NumberCpu*WriteBuffer)
+
 	for {
-		if m.Sys-m.Alloc < 102400 { // 100MB
+		if m.Sys-m.Alloc < 512000 { // 500MB threshold
 			break
 		}
-		for i := 0; CollectedQubits < WriteBuffer; i++ {
-			CollapsingQubits(&listQubit, &CollectedQubits, &TotalCollectedQubits)
+
+		for i := 0; i < WriteBuffer; i++ {
+			wg.Add(1)
+			q1, q2 = CollapsingQubits(&wg, magnitude, phase, NumberCpu, q1, q2)
+			wg.Done()
 		}
 
-		CollectedQubits = 0
-		fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSONfilename)
-		jsonData, err := json.Marshal(listQubit)
-		if err != nil {
-			panic(err)
-		}
+		wg.Wait()
 
-		file, err := os.Create(JSONfilename)
-		if err != nil {
-			panic(err)
-		}
+		for j := 0; j < NumberCpu*WriteBuffer; j++ {
+			magnitude2 := <-magnitude
+			phase2 := <-phase
+			if <-magnitude2 && <-phase2 {
+				Duration = time.Now().UnixNano() - Then //the time it takes to bring another collapse forward.
+				q3 := RebuildFromTick(2, q1[j])
 
-		_, err = file.Write(jsonData)
-		if err != nil {
-			panic(err)
-		}
+				q3RI := QubitRI{
+					AlphaReal: real(q3.Alpha),
+					AlphaImag: imag(q3.Alpha),
+					OmegaReal: real(q3.Omega),
+					OmegaImag: imag(q3.Omega),
+					BetaReal:  real(q3.Beta),
+					BetaImag:  imag(q3.Beta),
+					ThetaReal: real(q3.Theta),
+					ThetaImag: imag(q3.Theta),
+					Tick:      2,
+					Timestamp: Duration,
+				}
+				q2RI := QubitRI{
+					AlphaReal: real(q2[j].Alpha),
+					AlphaImag: imag(q2[j].Alpha),
+					OmegaReal: real(q2[j].Omega),
+					OmegaImag: imag(q2[j].Omega),
+					BetaReal:  real(q2[j].Beta),
+					BetaImag:  imag(q2[j].Beta),
+					ThetaReal: real(q2[j].Theta),
+					ThetaImag: imag(q2[j].Theta),
+					Tick:      2,
+					Timestamp: Duration,
+				}
 
-		file.Close()
+				QubitsRICombo := append(QubitsRICombo, q3RI, q2RI)
+				listQubit = append(listQubit, QubitsRICombo)
+				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
+				TotalCollectedQubits++
+				CollectedBits++
+			}
+		}
+		if CollectedBits == int64(WriteBuffer) {
+			fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSONfilename)
+			jsonData, err := json.Marshal(listQubit)
+			if err != nil {
+				panic(err)
+			}
+
+			file, err := os.Create(JSONfilename)
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = file.Write(jsonData)
+			if err != nil {
+				panic(err)
+			}
+			CollectedBits = 0
+			file.Close()
+		}
+		q1 = nil
+		q2 = nil
 	}
+	close(magnitude)
+	close(phase)
 	return listQubit
 }
 
@@ -2047,7 +2050,7 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 
 func main() {
 
-	var WriteBufferThreshold int64 = 1000
+	var WriteBufferThreshold int = 1000
 	var lstQubit [][]QubitRI
 	var listQubits [][]Qubit
 	var listNanoseconds []int64
