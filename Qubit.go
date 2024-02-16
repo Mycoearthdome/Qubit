@@ -1784,14 +1784,14 @@ func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 				}
 
 				QubitsRICombo = append(QubitsRICombo, q3RI, q2RI)
-				fmt.Println(QubitsRICombo)
+				//fmt.Println(QubitsRICombo) //DEBUG PRINT
 				listQubit = append(listQubit, QubitsRICombo)
 				QubitsRICombo = nil
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				TotalCollectedQubits++
 				CollectedBits++
 
-				if CollectedBits == int64(WriteBuffer) { //TODO:NaN happens why?
+				if CollectedBits == int64(WriteBuffer) {
 					jsonData, err := json.Marshal(listQubit)
 					if err != nil {
 						panic(err)
@@ -2071,7 +2071,7 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 
 func main() {
 
-	var WriteBufferThreshold int = 20
+	var WriteBufferThreshold int = 1000
 	var lstQubit [][]QubitRI
 	var listQubits [][]Qubit
 	var listNanoseconds []int64
