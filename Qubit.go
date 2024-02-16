@@ -1708,6 +1708,7 @@ func RebuildFromTick(tick int, q1 Qubit) Qubit {
 
 func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 	var wg sync.WaitGroup
+	var mutex sync.Mutex
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	var listQubit [][]QubitRI
@@ -1732,8 +1733,6 @@ func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 			q1, q2 = CollapsingQubits(&wg, magnitude, phase, NumberCpu, q1, q2)
 			wg.Done()
 		}
-
-		wg.Wait()
 
 		for j := 0; j < NumberCpu*WriteBuffer; j++ {
 			magnitude2 := <-magnitude
@@ -1766,15 +1765,23 @@ func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 					Tick:      2,
 					Timestamp: Duration,
 				}
-
+				mutex.Lock()
 				QubitsRICombo := append(QubitsRICombo, q3RI, q2RI)
+				if CollectedBits >= int64(WriteBuffer) {
+					time.Sleep(time.Second * 2)
+				}
 				listQubit = append(listQubit, QubitsRICombo)
 				fmt.Printf("\rFound Qubits = %d", TotalCollectedQubits)
 				TotalCollectedQubits++
 				CollectedBits++
+				mutex.Unlock()
 			}
 		}
-		if CollectedBits == int64(WriteBuffer) {
+
+		wg.Wait()
+
+		mutex.Lock()
+		if CollectedBits >= int64(WriteBuffer) {
 			fmt.Printf("...Saving ... %d Qubits to file %s\n", TotalCollectedQubits, JSONfilename)
 			jsonData, err := json.Marshal(listQubit)
 			if err != nil {
@@ -1793,6 +1800,7 @@ func WriteQubits(JSONfilename string, WriteBuffer int) [][]QubitRI {
 			CollectedBits = 0
 			file.Close()
 		}
+		mutex.Unlock()
 		q1 = nil
 		q2 = nil
 	}
@@ -2050,7 +2058,7 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 
 func main() {
 
-	var WriteBufferThreshold int = 1000
+	var WriteBufferThreshold int = 50
 	var lstQubit [][]QubitRI
 	var listQubits [][]Qubit
 	var listNanoseconds []int64
