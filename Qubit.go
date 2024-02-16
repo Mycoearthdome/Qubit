@@ -2186,7 +2186,7 @@ func main() {
 	listTickFloat64 := int64ToFloat64Slice(listTick)
 	listNanosecondsFloat64 := int64ToFloat64Slice(listNanoseconds)
 
-	cumSumQubits, adjustedTicks := Regress(listNanosecondsFloat64, listTickFloat64, true)
+	cumSumQubits, _ := Regress(listNanosecondsFloat64, listTickFloat64, true)
 	//CumSumQubits, adjustedTicks = Regress(CumSumQubits, adjustedTicks, false)
 
 	/////TEST IT\\\\\\
@@ -2198,7 +2198,7 @@ func main() {
 	//	fmt.Printf("%.7fi%.7f + %.7fi%.7f = %v\n", listQ1Real[i], listQ1Imag[i], listQ2Real[i], listQ2Imag[i], AddComplex(complex(listQ1Real[i], listQ1Imag[i]), complex(listQ2Real[i], listQ2Imag[i])))
 	//}
 
-	Graph(cumSumQubits) //, adjustedTicks) //Graph(CumSumQubits, adjustedTicks)
+	Graph(cumSumQubits, nil) //, adjustedTicks) //Graph(CumSumQubits, adjustedTicks)
 
 	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
 	WriteWaveFile(Float642Frame(cumSumQubits), WaveFmt, "Qubits.wav")
