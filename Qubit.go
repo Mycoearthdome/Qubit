@@ -2167,14 +2167,14 @@ func main() {
 		}
 
 	}
-	fmt.Println("-==Repeated Qubits==-")
+	/*fmt.Println("-==Repeated Qubits==-")  //DEBUG
 	for i, Repeat := range RepeatQubits {
 		fmt.Printf("%d:%v+%v\n\n", i+1, Repeat[0], Repeat[1])
 	}
 	fmt.Println("-==Unique Qubits==-")
 	for i, Combo := range listQubits {
 		fmt.Printf("%d::%v+%v\n\n", i+1, Combo[0], Combo[1])
-	}
+	}*/
 	fmt.Println("Repeated Qubits harvested = ", len(RepeatQubits))
 	fmt.Println("Unique Qubits harvested = ", len(listQubits))
 	//repeatingTickPattern := findRepeatingPattern(listTick)
