@@ -2177,6 +2177,7 @@ func main() {
 	}*/
 	fmt.Println("Repeated Qubits harvested = ", len(RepeatQubits))
 	fmt.Println("Unique Qubits harvested = ", len(listQubits))
+	fmt.Println("Total Processed Qubits = ", len(listNanoseconds))
 	//repeatingTickPattern := findRepeatingPattern(listTick)
 	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
 
