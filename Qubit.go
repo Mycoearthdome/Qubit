@@ -1633,7 +1633,7 @@ func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan c
 		B2, last8 := secureRandomFloat64(last8)
 		B2i, last8 := secureRandomFloat64(last8)
 		T2, last8 := secureRandomFloat64(last8)
-		T2i, last8 := secureRandomFloat64(last8)
+		T2i, _ := secureRandomFloat64(last8)
 
 		*Originalq1 = append(*Originalq1, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
