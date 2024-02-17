@@ -2073,13 +2073,8 @@ func main() {
 
 	var WriteBufferThreshold int = 1000
 	var lstQubit [][]QubitRI
-	var listQubits [][]Qubit
-	var RepeatQubits [][]Qubit
 	var listNanoseconds []int64
 	var listTick []int64
-	var q1 Qubit
-	var q2 Qubit
-
 	var w string
 	var r string
 
@@ -2106,77 +2101,24 @@ func main() {
 		}
 	}
 
-	var Foundq1 bool
-	var Foundq2 bool
-	for j, Qubits := range lstQubit {
-		var Combination []Qubit
-		var Repeat []Qubit
-		q1 = Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
-			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
-			Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
-			Theta: complex(Qubits[0].ThetaReal, Qubits[0].ThetaImag),
-		}
+	for _, Qubits := range lstQubit {
+		/*
+			q1 := Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
+				Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
+				Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
+				Theta: complex(Qubits[0].ThetaReal, Qubits[0].ThetaImag),
+			}
 
-		q2 = Qubit{Alpha: complex(Qubits[1].AlphaReal, Qubits[1].AlphaImag),
-			Beta:  complex(Qubits[1].BetaReal, Qubits[1].BetaImag),
-			Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
-			Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
-		}
-
+			q2 := Qubit{Alpha: complex(Qubits[1].AlphaReal, Qubits[1].AlphaImag),
+				Beta:  complex(Qubits[1].BetaReal, Qubits[1].BetaImag),
+				Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
+				Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
+			}
+		*/
 		listTick = append(listTick, int64(Qubits[0].Tick))
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
-
-		for i := j; i < len(lstQubit); i++ {
-			if i+1 < len(lstQubit) {
-				if q1 == (Qubit{Alpha: complex(lstQubit[i+1][0].AlphaReal, lstQubit[i+1][0].AlphaImag),
-					Beta:  complex(lstQubit[i+1][0].BetaReal, lstQubit[i+1][0].BetaImag),
-					Omega: complex(lstQubit[i+1][0].OmegaReal, lstQubit[i+1][0].OmegaImag),
-					Theta: complex(lstQubit[i+1][0].ThetaReal, lstQubit[i+1][0].ThetaImag),
-				}) {
-					//fmt.Print("Found q1...")
-					Foundq1 = true
-					for k := i; k < len(lstQubit); k++ {
-						if k+1 < len(lstQubit) {
-							{
-								if q2 == (Qubit{Alpha: complex(lstQubit[k+1][1].AlphaReal, lstQubit[k+1][1].AlphaImag),
-									Beta:  complex(lstQubit[k+1][1].BetaReal, lstQubit[k+1][1].BetaImag),
-									Omega: complex(lstQubit[k+1][1].OmegaReal, lstQubit[k+1][1].OmegaImag),
-									Theta: complex(lstQubit[k+1][1].ThetaReal, lstQubit[k+1][1].ThetaImag),
-								}) {
-									//fmt.Println("Found q2!-->", i)
-									Foundq2 = true
-									break
-								}
-							}
-						}
-					}
-
-					if Foundq1 && Foundq2 {
-						Repeat = append(Repeat, q1, q2)
-						RepeatQubits = append(RepeatQubits, Repeat)
-						Foundq1 = false
-						Foundq2 = false
-					} else {
-						Combination = append(Combination, q1, q2)
-						listQubits = append(listQubits, Combination)
-						Foundq1 = false
-						Foundq2 = false
-					}
-				}
-			}
-		}
-
 	}
-	/*fmt.Println("-==Repeated Qubits==-")  //DEBUG
-	for i, Repeat := range RepeatQubits {
-		fmt.Printf("%d:%v+%v\n\n", i+1, Repeat[0], Repeat[1])
-	}
-	fmt.Println("-==Unique Qubits==-")
-	for i, Combo := range listQubits {
-		fmt.Printf("%d::%v+%v\n\n", i+1, Combo[0], Combo[1])
-	}*/
-	fmt.Println("Repeated Qubits harvested = ", len(RepeatQubits))
-	fmt.Println("Unique Qubits harvested = ", len(listQubits))
+
 	fmt.Println("Total Processed Qubits = ", len(listNanoseconds))
 	//repeatingTickPattern := findRepeatingPattern(listTick)
 	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
