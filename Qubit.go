@@ -2195,12 +2195,52 @@ func main() {
 
 	fmt.Println("Saved...Qubits.wav.")
 
+	ProduceGenePools(Realq1, Realq2, Imagq1, Imagq2)
+
+}
+
+func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) {
+	var Count int = 1
+	filename := "Qubits"
+	size := 70000
 	// Create a FloatGenome from float slice
 	SuperpositionGenome := NewFloatGenome(Realq1, Realq2, Imagq1, Imagq2)
 
 	// Access information from FloatGenome
-	fmt.Println("Length:", len(SuperpositionGenome))
-	fmt.Println("Superposition DNA Sequence:", SuperpositionGenome)
+	fmt.Println("DNA Length:", len(SuperpositionGenome))
+	//fmt.Println("Superposition DNA Sequence:", SuperpositionGenome) //DEBUG
+	var j int = 0
+	var SecondRun bool = false
+	f, err := os.Create(filename + "_Split_" + strconv.Itoa(Count) + ".DNA")
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < len(SuperpositionGenome); i = i + size {
+		if SecondRun {
+			if i%size == 0 {
+				f.Write([]byte(SuperpositionGenome[j:i]))
+				f.Close()
+				fmt.Println("Saved Superposition DNA sequence to file", filename+"_Split_"+strconv.Itoa(Count)+".DNA")
+				Count++
+				f, err = os.Create(filename + "_Split_" + strconv.Itoa(Count) + ".DNA")
+				if err != nil {
+					panic(err)
+				}
+			}
+			if i+size >= len(SuperpositionGenome) {
+				f.Write([]byte(SuperpositionGenome[i:]))
+				f.Close()
+				fmt.Println("Saved Superposition DNA sequence to file", filename+"_Split_"+strconv.Itoa(Count)+".DNA")
+				break
+			} else {
+				j = i
+			}
+		} else {
+			SecondRun = true
+		}
+
+	}
+
 	//for i := 1; i < len(CumSumQubits); i++ {
 	//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
 	//	time.Sleep(time.Second)
