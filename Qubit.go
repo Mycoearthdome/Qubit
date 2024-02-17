@@ -1874,7 +1874,7 @@ func cumulativeSum(numbers []float64) []float64 {
 	return cumSum
 }
 
-func Graph(cumSumQubits []float64, adjustedTicks []float64) {
+func Graph(realq1 []float64, realq2 []float64, imagq1 []float64, imagq2 []float64, filename string) {
 
 	// Calculate the cumulative sum
 	//cumSumTick := cumulativeSum(lstTick)
@@ -1883,48 +1883,74 @@ func Graph(cumSumQubits []float64, adjustedTicks []float64) {
 	// Create a new plot
 	p := plot.New()
 
-	ptsLineQubits := make(plotter.XYs, len(cumSumQubits))
-	for i, num := range cumSumQubits {
-		ptsLineQubits[i].X = float64(i)
-		ptsLineQubits[i].Y = num
+	ptsRealq1 := make(plotter.XYs, len(realq1))
+	for i, num := range realq1 {
+		ptsRealq1[i].X = float64(i)
+		ptsRealq1[i].Y = num
 	}
 
-	ptsLineAdjustedTick := make(plotter.XYs, len(adjustedTicks))
-	for i, num := range adjustedTicks {
-		ptsLineAdjustedTick[i].X = float64(i)
-		ptsLineAdjustedTick[i].Y = num
+	ptsRealq2 := make(plotter.XYs, len(realq2))
+	for i, num := range realq2 {
+		ptsRealq2[i].X = float64(i)
+		ptsRealq2[i].Y = num
+	}
+
+	ptsImagq1 := make(plotter.XYs, len(imagq1))
+	for i, num := range imagq1 {
+		ptsRealq1[i].X = float64(i)
+		ptsRealq1[i].Y = num
+	}
+
+	ptsImagq2 := make(plotter.XYs, len(imagq2))
+	for i, num := range imagq2 {
+		ptsRealq2[i].X = float64(i)
+		ptsRealq2[i].Y = num
 	}
 
 	// Create lines
-	lineQubits, err := plotter.NewLine(ptsLineQubits)
+	lineRealq1, err := plotter.NewLine(ptsRealq1)
 	if err != nil {
 		panic(err)
 	}
 
-	lineTicks, err := plotter.NewLine(ptsLineAdjustedTick)
+	lineRealq2, err := plotter.NewLine(ptsRealq2)
+	if err != nil {
+		panic(err)
+	}
+
+	lineImagq1, err := plotter.NewLine(ptsImagq1)
+	if err != nil {
+		panic(err)
+	}
+
+	lineImagq2, err := plotter.NewLine(ptsImagq2)
 	if err != nil {
 		panic(err)
 	}
 
 	// Set color for Line 1
-	lineQubits.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red
+	lineRealq1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255} // Red
 
 	// Set color for Line 2
-	lineTicks.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255} // Green
+	lineRealq2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255} // Green
 
-	// Add the scatter and line plots to the plot
-	p.Add(lineQubits, lineTicks) //, lineTicks)
+	// Set color for Line 1
+	lineImagq1.Color = color.RGBA{R: 127, G: 0, B: 0, A: 255} // Red
 
+	// Set color for Line 2
+	lineImagq2.Color = color.RGBA{R: 0, G: 127, B: 0, A: 255} // Green
+
+	p.Add(lineRealq1, lineRealq2, lineImagq1, lineImagq2)
 	// Set axis labels
 	p.X.Label.Text = "Time"
 	p.Y.Label.Text = "Qubits"
 
 	// Save the plot to a PNG file
 	fmt.Println("Building the plot data...Please wait!")
-	if err := p.Save(12*vg.Inch, 8*vg.Inch, "Qubits_cumulative_sum_plot.png"); err != nil {
+	if err := p.Save(12*vg.Inch, 8*vg.Inch, filename); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Saved Qubits graph... Qubits_cumulative_sum_plot.png\n")
+	fmt.Printf("Saved Qubits graph... %s\n", filename)
 }
 
 func logValues(values []float64) []float64 {
@@ -2073,7 +2099,8 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 func main() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-
+	var Graph_Cumulative_Nanoseconds_filename string = "Qubits_cumulative_sum_plot.png"
+	//var Graph_Qubits_Real_Imag string = "Qubits_Real_Imag.png"
 	var WriteBufferThreshold int = int((m.Sys - m.Alloc) / uint64(runtime.NumCPU()*100)) //Adjust this as needed. This gets multiplied the number of cores.
 	fmt.Println("Chunking Qubit by chunks of:", int((m.Sys-m.Alloc)/uint64(runtime.NumCPU()*100)))
 	var lstQubit [][]QubitRI
@@ -2081,6 +2108,10 @@ func main() {
 	var listTick []int64
 	var w string
 	var r string
+	var Realq1 []float64
+	var Realq2 []float64
+	var Imagq1 []float64
+	var Imagq2 []float64
 
 	flag.StringVar(&w, "w", "", "Write Qubits")
 	flag.StringVar(&r, "r", "", "Read Qubits")
@@ -2121,10 +2152,15 @@ func main() {
 
 		listTick = append(listTick, int64(Qubits[0].Tick))
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
+		Realq1 = append(Realq1, Qubits[0].AlphaReal, Qubits[0].BetaReal, Qubits[0].OmegaReal, Qubits[0].ThetaReal)
+		Realq2 = append(Realq2, Qubits[1].AlphaReal, Qubits[1].BetaReal, Qubits[1].OmegaReal, Qubits[1].ThetaReal)
+		Imagq1 = append(Imagq1, Qubits[0].AlphaImag, Qubits[0].BetaImag, Qubits[0].OmegaImag, Qubits[0].ThetaImag)
+		Imagq2 = append(Imagq2, Qubits[1].AlphaImag, Qubits[1].BetaImag, Qubits[1].OmegaImag, Qubits[1].ThetaImag)
 		fmt.Printf("%d:%v+%v\n\n", i, q1, q2)
 	}
 
 	fmt.Println("Total Processed Qubits = ", len(listNanoseconds))
+
 	//repeatingTickPattern := findRepeatingPattern(listTick)
 	//fmt.Printf("Repeating Tick pattern:%d\n", repeatingTickPattern)
 
@@ -2146,10 +2182,16 @@ func main() {
 	//	fmt.Printf("%.7fi%.7f + %.7fi%.7f = %v\n", listQ1Real[i], listQ1Imag[i], listQ2Real[i], listQ2Imag[i], AddComplex(complex(listQ1Real[i], listQ1Imag[i]), complex(listQ2Real[i], listQ2Imag[i])))
 	//}
 
-	Graph(cumSumQubits, nil) //, adjustedTicks) //Graph(CumSumQubits, adjustedTicks)
-
+	Graph(cumSumQubits, nil, nil, nil, Graph_Cumulative_Nanoseconds_filename) //Graph(CumSumQubits, adjustedTicks)
+	//Graph(Realq1, nil, nil, nil, Graph_Qubits_Real_Imag) //finetuning the music.
 	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
-	WriteWaveFile(Float642Frame(cumSumQubits), WaveFmt, "Qubits.wav")
+
+	//WriteWaveFile(Float642Frame(cumSumQubits), WaveFmt, "Qubits_TimeFrame.wav")
+	WriteWaveFile(Float642Frame(Realq1), WaveFmt, "Qubits_Realq1.wav")
+	WriteWaveFile(Float642Frame(Realq2), WaveFmt, "Qubits_Realq2.wav")
+	WriteWaveFile(Float642Frame(Imagq1), WaveFmt, "Qubits_Imagq1.wav")
+	WriteWaveFile(Float642Frame(Imagq2), WaveFmt, "Qubits_Imagq2.wav")
+
 	fmt.Println("Saved...Qubits.wav.")
 
 	//for i := 1; i < len(CumSumQubits); i++ {
