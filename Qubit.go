@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/biogo/biogo/alphabet"
 	"github.com/shopspring/decimal"
 	"gonum.org/v1/gonum/stat"
 	"gonum.org/v1/plot"
@@ -2136,8 +2137,8 @@ func main() {
 		}
 	}
 
-	for i, Qubits := range lstQubit {
-
+	for _, Qubits := range lstQubit {
+		/* DEBUG
 		q1 := Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
 			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
 			Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
@@ -2149,14 +2150,14 @@ func main() {
 			Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
 			Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
 		}
-
+		*/
 		listTick = append(listTick, int64(Qubits[0].Tick))
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
 		Realq1 = append(Realq1, Qubits[0].AlphaReal, Qubits[0].BetaReal, Qubits[0].OmegaReal, Qubits[0].ThetaReal)
 		Realq2 = append(Realq2, Qubits[1].AlphaReal, Qubits[1].BetaReal, Qubits[1].OmegaReal, Qubits[1].ThetaReal)
 		Imagq1 = append(Imagq1, Qubits[0].AlphaImag, Qubits[0].BetaImag, Qubits[0].OmegaImag, Qubits[0].ThetaImag)
 		Imagq2 = append(Imagq2, Qubits[1].AlphaImag, Qubits[1].BetaImag, Qubits[1].OmegaImag, Qubits[1].ThetaImag)
-		fmt.Printf("%d:%v+%v\n\n", i, q1, q2)
+		//fmt.Printf("%d:%v+%v\n\n", i, q1, q2) // DEBUG
 	}
 
 	fmt.Println("Total Processed Qubits = ", len(listNanoseconds))
@@ -2194,6 +2195,12 @@ func main() {
 
 	fmt.Println("Saved...Qubits.wav.")
 
+	// Create a FloatGenome from float slice
+	SuperpositionGenome := NewFloatGenome(Realq1, Realq2, Imagq1, Imagq2)
+
+	// Access information from FloatGenome
+	fmt.Println("Length:", len(SuperpositionGenome))
+	fmt.Println("Superposition DNA Sequence:", SuperpositionGenome)
 	//for i := 1; i < len(CumSumQubits); i++ {
 	//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
 	//	time.Sleep(time.Second)
@@ -2203,4 +2210,25 @@ func main() {
 	//} else {
 	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[1]), (float64(cumSumTick[1])))
 	//}
+}
+
+// FloatToNucleotide encodes a float64 value to a nucleotide.
+func FloatToNucleotide(value float64) alphabet.Letter {
+	// Map the fractional part of the float64 to a nucleotide
+	index := int(math.Mod(math.Abs(value), 1) * 4)
+	nucleotides := alphabet.DNA
+	return nucleotides.Letter(index)
+}
+
+// NewFloatGenome creates a FloatGenome from a []float64.
+func NewFloatGenome(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) string {
+	var bpBuilder strings.Builder
+	for i := 0; i < len(Realq1); i++ {
+		nucleotide1 := FloatToNucleotide(Realq1[i] + Realq2[i])
+		nucleotide2 := FloatToNucleotide(Imagq1[i] + Imagq2[i])
+		bpBuilder.WriteString(string(nucleotide1))
+		bpBuilder.WriteString(string(nucleotide2))
+	}
+
+	return bpBuilder.String()
 }
