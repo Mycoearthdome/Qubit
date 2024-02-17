@@ -1611,28 +1611,29 @@ func Tick(Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B co
 }
 
 func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan chan bool, NumberCpu int, Originalq1 *[]Qubit, Originalq2 *[]Qubit) {
-
+	var last8 [8]byte
+	rand.Read(last8[:])
 	for i := 0; i < NumberCpu; i++ { // /4 if using the 4 phases
 		wg.Add(1)
 		// QBit 1
-		var A1 float64 = secureRandomFloat64()
-		var A1i float64 = secureRandomFloat64()
-		var O1 float64 = secureRandomFloat64()
-		var O1i float64 = secureRandomFloat64()
-		var B1 float64 = secureRandomFloat64()
-		var B1i float64 = secureRandomFloat64()
-		var T1 float64 = secureRandomFloat64()
-		var T1i float64 = secureRandomFloat64()
+		A1, last8 := secureRandomFloat64(last8)
+		A1i, last8 := secureRandomFloat64(last8)
+		O1, last8 := secureRandomFloat64(last8)
+		O1i, last8 := secureRandomFloat64(last8)
+		B1, last8 := secureRandomFloat64(last8)
+		B1i, last8 := secureRandomFloat64(last8)
+		T1, last8 := secureRandomFloat64(last8)
+		T1i, last8 := secureRandomFloat64(last8)
 
 		//Qbit 2
-		var A2 float64 = secureRandomFloat64()
-		var A2i float64 = secureRandomFloat64()
-		var O2 float64 = secureRandomFloat64()
-		var O2i float64 = secureRandomFloat64()
-		var B2 float64 = secureRandomFloat64()
-		var B2i float64 = secureRandomFloat64()
-		var T2 float64 = secureRandomFloat64()
-		var T2i float64 = secureRandomFloat64()
+		A2, last8 := secureRandomFloat64(last8)
+		A2i, last8 := secureRandomFloat64(last8)
+		O2, last8 := secureRandomFloat64(last8)
+		O2i, last8 := secureRandomFloat64(last8)
+		B2, last8 := secureRandomFloat64(last8)
+		B2i, last8 := secureRandomFloat64(last8)
+		T2, last8 := secureRandomFloat64(last8)
+		T2i, last8 := secureRandomFloat64(last8)
 
 		*Originalq1 = append(*Originalq1, Qubit{Alpha: cmplx.Sqrt(normalizeComplex(complex(A1, A1i))),
 			Omega: cmplx.Sqrt(normalizeComplex(complex(O1, O1i))),
@@ -1674,7 +1675,7 @@ func CollapsingQubits(wg *sync.WaitGroup, magnitude chan chan bool, phase chan c
 
 }
 
-func secureRandomFloat64() float64 {
+func secureRandomFloat64(lastSaved [8]byte) (float64, [8]byte) {
 	var randomBytes [8]byte
 	var randomFloat float64
 	for {
@@ -1684,12 +1685,12 @@ func secureRandomFloat64() float64 {
 		}
 
 		randomFloat = math.Float64frombits(binary.BigEndian.Uint64(randomBytes[:]))
-		if !math.IsNaN(randomFloat) {
+		if !math.IsNaN(randomFloat) && randomBytes != lastSaved {
 			break
 		}
 	}
 
-	return randomFloat
+	return randomFloat, randomBytes
 }
 
 func RebuildFromTick(tick int, q1 Qubit) Qubit {
