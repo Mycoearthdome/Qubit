@@ -2071,8 +2071,11 @@ func QubitsToFloat64(listQubits [][]Qubit) ([]float64, []float64, []float64, []f
 }
 
 func main() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
 
-	var WriteBufferThreshold int = 1000
+	var WriteBufferThreshold int = int((m.Sys - m.Alloc) / uint64(runtime.NumCPU()*100)) //Adjust this as needed. This gets multiplied the number of cores.
+	fmt.Println("Chunking Qubit by chunks of:", int((m.Sys-m.Alloc)/uint64(runtime.NumCPU()*100)))
 	var lstQubit [][]QubitRI
 	var listNanoseconds []int64
 	var listTick []int64
