@@ -2102,22 +2102,23 @@ func main() {
 		}
 	}
 
-	for _, Qubits := range lstQubit {
-		/*
-			q1 := Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
-				Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
-				Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
-				Theta: complex(Qubits[0].ThetaReal, Qubits[0].ThetaImag),
-			}
+	for i, Qubits := range lstQubit {
 
-			q2 := Qubit{Alpha: complex(Qubits[1].AlphaReal, Qubits[1].AlphaImag),
-				Beta:  complex(Qubits[1].BetaReal, Qubits[1].BetaImag),
-				Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
-				Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
-			}
-		*/
+		q1 := Qubit{Alpha: complex(Qubits[0].AlphaReal, Qubits[0].AlphaImag),
+			Beta:  complex(Qubits[0].BetaReal, Qubits[0].BetaImag),
+			Omega: complex(Qubits[0].OmegaReal, Qubits[0].OmegaImag),
+			Theta: complex(Qubits[0].ThetaReal, Qubits[0].ThetaImag),
+		}
+
+		q2 := Qubit{Alpha: complex(Qubits[1].AlphaReal, Qubits[1].AlphaImag),
+			Beta:  complex(Qubits[1].BetaReal, Qubits[1].BetaImag),
+			Omega: complex(Qubits[1].OmegaReal, Qubits[1].OmegaImag),
+			Theta: complex(Qubits[1].ThetaReal, Qubits[1].ThetaImag),
+		}
+
 		listTick = append(listTick, int64(Qubits[0].Tick))
 		listNanoseconds = append(listNanoseconds, Qubits[0].Timestamp)
+		fmt.Printf("%d:%v+%v\n\n", i, q1, q2)
 	}
 
 	fmt.Println("Total Processed Qubits = ", len(listNanoseconds))
