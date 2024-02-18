@@ -1521,7 +1521,7 @@ func Tick(Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B co
 	var pha bool = false
 	magnitude2 := make(chan bool, 1)
 	phase2 := make(chan bool, 1)
-	CollapseThreshold := complex(1, -1) // ADJUST THIS TO YOUR NEEDS. (1,1) or (1,-1) or (-1, 1) will work where (1,0) or (0,0) will not.
+	CollapseThreshold := complex(1, -1) // ADJUST THIS TO YOUR NEEDS. (1,1) or (1,-1) or (-1, 1) or (-1,-1) will work where (1,0) or (0,0) or (0,1) will not.
 
 	switch Moment {
 	case 1:
