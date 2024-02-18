@@ -1521,7 +1521,7 @@ func Tick(Q1A complex128, Q2A complex128, Q1O complex128, Q2O complex128, Q1B co
 	var pha bool = false
 	magnitude2 := make(chan bool, 1)
 	phase2 := make(chan bool, 1)
-	CollapseThreshold := complex(1, 1)
+	CollapseThreshold := complex(1, -1) // ADJUST THIS TO YOUR NEEDS. (1,1) or (1,-1) or (-1, 1) will work where (1,0) or (0,0) will not.
 
 	switch Moment {
 	case 1:
@@ -2185,7 +2185,7 @@ func main() {
 
 	Graph(cumSumQubits, nil, nil, nil, Graph_Cumulative_Nanoseconds_filename) //Graph(CumSumQubits, adjustedTicks)
 	//Graph(Realq1, nil, nil, nil, Graph_Qubits_Real_Imag) //finetuning the music.
-	WaveFmt := NewWaveFmt(1, 2, 44100, 16, nil)
+	WaveFmt := NewWaveFmt(1, 2, 48000, 16, nil)
 
 	//WriteWaveFile(Float642Frame(cumSumQubits), WaveFmt, "Qubits_TimeFrame.wav")
 	WriteWaveFile(Float642Frame(Realq1), WaveFmt, "Qubits_Realq1.wav")
@@ -2197,9 +2197,13 @@ func main() {
 
 	ProduceGenePools(Realq1, Realq2, Imagq1, Imagq2)
 
+	//Count = 1
+	//for _, nonrepeating := range nonRepeatingMatches {
+	//	fmt.Printf("Non-Repeating patterns #%d: %s\n\n", Count, nonrepeating)
+	//}
 }
 
-func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) {
+func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) string {
 	var Count int = 1
 	filename := "Qubits"
 	size := 70000
@@ -2238,19 +2242,19 @@ func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imag
 		} else {
 			SecondRun = true
 		}
-
 	}
-
-	//for i := 1; i < len(CumSumQubits); i++ {
-	//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
-	//	time.Sleep(time.Second)
-	//}
-	//if float64(cumSumQubits[1]) == (float64(cumSumTick[1])*interceptDiff + slopeDiff) {
-	//	break
-	//} else {
-	//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[1]), (float64(cumSumTick[1])))
-	//}
+	return SuperpositionGenome
 }
+
+//for i := 1; i < len(CumSumQubits); i++ {
+//		fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", CumSumQubits[i], adjustedTicks[i])
+//	time.Sleep(time.Second)
+//}
+//if float64(cumSumQubits[1]) == (float64(cumSumTick[1])*interceptDiff + slopeDiff) {
+//	break
+//} else {
+//	fmt.Printf("Qubit-->%2.f<-->%2.f<-Tick\n", float64(cumSumQubits[1]), (float64(cumSumTick[1])))
+//}
 
 // FloatToNucleotide encodes a float64 value to a nucleotide.
 func FloatToNucleotide(value float64) alphabet.Letter {
