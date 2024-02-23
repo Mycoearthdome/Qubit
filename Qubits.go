@@ -1720,11 +1720,11 @@ func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imag
 }
 
 // FloatToNucleotide encodes a float64 value to a nucleotide.
-func FloatToNucleotides(q1 float64, q2 float64) []alphabet.Letter {
+func FloatToNucleotides(combined float64) []alphabet.Letter {
 	var converted []byte
 	var nucleotides []alphabet.Letter
-	converted = append(converted, byte(q1*math.Pow10(10)))
-	converted = append(converted, byte(q2*math.Pow10(10)))
+	converted = append(converted, byte(combined*math.Pow10(10)))
+	//converted = append(converted, byte(q2*math.Pow10(10)))
 	nucleotides = append(nucleotides, alphabet.BytesToLetters(converted)...)
 	//fmt.Println(nucleotides)
 	return nucleotides
@@ -1736,8 +1736,8 @@ func NewFloatGenome(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2
 	var nucleotide1 []alphabet.Letter
 	var nucleotide2 []alphabet.Letter
 	for i := 0; i < len(Realq1); i++ {
-		nucleotide1 = FloatToNucleotides(Realq1[i], Realq2[i])
-		nucleotide2 = FloatToNucleotides(Imagq1[i], Imagq2[i])
+		nucleotide1 = FloatToNucleotides(Realq1[i] + Realq2[i])
+		nucleotide2 = FloatToNucleotides(Imagq1[i] + Imagq2[i])
 		for _, nucleotide := range nucleotide1 {
 			bpBuilder.WriteString(string(alphabet.DNA.Letter((int(^nucleotide) % 4))))
 		}
