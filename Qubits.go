@@ -1732,18 +1732,213 @@ func FloatToNucleotides(combined float64) []alphabet.Letter {
 
 // NewFloatGenome creates a FloatGenome from a []float64.
 func NewFloatGenome(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) string {
-	var bpBuilder strings.Builder
+	var basePairs = map[string]string{
+		"a": "t",
+		"t": "a",
+		"c": "g",
+		"g": "c",
+	}
+	var bPrevious byte
+	var bNow byte
+	var bNext byte
+	var bCatchPrevious []byte
+	var bCatchNow []byte
+	var bCatchNext []byte
+	var bpWork [][]byte
+	var bpFinal string
+	var bpBuilder string
+	var IncrementalScan int
+	var Initialized bool = false
+	var A bool = false
+	var C bool = false
+	var T bool = false
+	var G bool = false
+	var Regress bool = false
 	var nucleotide1 []alphabet.Letter
 	var nucleotide2 []alphabet.Letter
+
 	for i := 0; i < len(Realq1); i++ {
 		nucleotide1 = FloatToNucleotides(Realq1[i] + Realq2[i])
 		nucleotide2 = FloatToNucleotides(Imagq1[i] + Imagq2[i])
 		for _, nucleotide := range nucleotide1 {
-			bpBuilder.WriteString(string(alphabet.DNA.Letter((int(^nucleotide) % 4))))
+			bpBuilder += string(alphabet.DNA.Letter((int(^nucleotide) % 4)))
 		}
 		for _, nucleotide := range nucleotide2 {
-			bpBuilder.WriteString(string(alphabet.DNA.Letter((int(^nucleotide) % 4))))
+			bpBuilder += string(alphabet.DNA.Letter((int(^nucleotide) % 4)))
 		}
 	}
-	return bpBuilder.String()
+	fmt.Println(bpBuilder)
+	for i := 0; i < len(bpBuilder); i++ {
+		if i > 0 {
+			bPrevious = bpBuilder[i-1]
+			bNow = bpBuilder[i]
+			if i+1 < len(bpBuilder) {
+				bNext = bpBuilder[i+1]
+				bCatchPrevious = append(bCatchPrevious, bPrevious)
+				bCatchNow = append(bCatchNow, bNow)
+				bCatchNext = append(bCatchNext, bNext)
+				if !Initialized {
+					if string(bCatchPrevious) == "a" {
+						A = true
+					}
+					if string(bCatchPrevious) == "c" {
+						C = true
+					}
+					if string(bCatchPrevious) == "t" {
+						T = true
+					}
+					if string(bCatchPrevious) == "g" {
+						G = true
+					}
+					if string(bCatchNow) == "a" {
+						A = true
+					}
+					if string(bCatchNow) == "c" {
+						C = true
+					}
+					if string(bCatchNow) == "t" {
+						T = true
+					}
+					if string(bCatchNow) == "g" {
+						G = true
+					}
+					if string(bCatchNext) == "a" {
+						A = true
+					}
+					if string(bCatchNext) == "c" {
+						C = true
+					}
+					if string(bCatchNext) == "t" {
+						T = true
+					}
+					if string(bCatchNext) == "g" {
+						G = true
+					}
+					bpWork = append(bpWork, bCatchPrevious)
+					bpWork = append(bpWork, bCatchNow)
+					bpWork = append(bpWork, bCatchNext)
+					bCatchPrevious = nil
+					bCatchNow = nil
+					bCatchNext = nil
+					if A && C && T && G {
+						Initialized = true
+					}
+					bCatchPrevious = nil
+					bCatchNow = nil
+					bCatchNext = nil
+				} else {
+					bpWork = append(bpWork, bCatchPrevious)
+					bpWork = append(bpWork, bCatchNow)
+					bpWork = append(bpWork, bCatchNext)
+					bCatchPrevious = nil
+					bCatchNow = nil
+					bCatchNext = nil
+				}
+				i = i + 2
+			} else {
+				bCatchPrevious = append(bCatchPrevious, bPrevious)
+				bCatchNow = append(bCatchNow, bNow)
+				bpWork = append(bpWork, bCatchPrevious)
+				bpWork = append(bpWork, bCatchNow)
+				//fmt.Println(bpWork) //TEST OK.
+				var bCurrent []byte
+				for j := 0; j < len(bpWork); j++ { //regression
+					var Count int = 0
+					for k := 0; k < len(bpWork); k++ {
+						//fmt.Printf("%s<-->%s\n", basePairs[string(bCurrent)], string(bpWork[k]))
+						if (basePairs[string(bCurrent)] == string(bpWork[k]) && Count == 0 && (j < k)) || (Regress && (basePairs[string(bCurrent)] == string(bpWork[k]) && Count == 0)) {
+							//fmt.Printf("%s<-->%s\n", basePairs[string(bCurrent)], string(bpWork[k]))
+							//os.Exit(1)
+							bpFinal += string(bpWork[k]) + string(bpWork[j])
+							bpWork[k] = nil
+							bCurrent = bpWork[j]
+							if bCurrent == nil {
+								IncrementalScan = 0
+								for {
+									IncrementalScan++
+									if bpWork[IncrementalScan] != nil {
+										break
+									}
+								}
+								bCurrent = bpWork[IncrementalScan]
+							}
+							if Regress {
+								Regress = false
+							}
+							break
+						} else {
+							if string(bpWork[j]) == string(bpWork[k]) && (j < k) && bpWork[j] != nil {
+								if j < k {
+									bCurrent = bpWork[j]
+									bpFinal += string(bpWork[k])
+									bpWork[k] = nil
+									Count++
+									//fmt.Println(bpWork)
+									//time.Sleep(time.Second)
+								}
+							} else {
+								// we have a continuity in bases
+								if basePairs[string(bCurrent)] == string(bpWork[k]) && bCurrent != nil && (j < k) {
+									bpFinal += string(bpWork[k])
+									bpWork[k] = nil
+									Count--
+									if Count == 0 {
+										Regress = true
+									}
+								}
+								if Count == 0 {
+									if j == 0 {
+										bpFinal += string(bpWork[j])
+										bCurrent = bpWork[j]
+										bpWork[j] = nil
+										break
+									}
+									if Regress {
+										//TODO:check condition
+										IncrementalScan = 0
+										for {
+											IncrementalScan++
+											if bpWork[IncrementalScan] != nil {
+												break
+											}
+										}
+										bCurrent = bpWork[IncrementalScan]
+										k = IncrementalScan
+										bpFinal += string(bpWork[k])
+										bpWork[k] = nil
+									}
+								}
+							}
+						}
+					}
+					IncrementalScan = 0
+					for {
+						IncrementalScan++
+						if IncrementalScan < len(bpWork) {
+							if bpWork[IncrementalScan] != nil {
+								break
+							}
+						} else {
+							break
+						}
+					}
+					if IncrementalScan < len(bpWork) {
+						bCurrent = bpWork[IncrementalScan]
+						bpFinal += string(bpWork[IncrementalScan])
+						bpWork[IncrementalScan] = nil
+					} else {
+						break
+					}
+				}
+			}
+			//fmt.Println(bpWork)
+		}
+	}
+	for _, base := range bpWork {
+		if base != nil {
+			bpFinal += string(base) //Get more Qubits from IBM Quantum.
+		}
+	}
+
+	return bpFinal
 }
