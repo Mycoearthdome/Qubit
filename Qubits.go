@@ -1528,6 +1528,10 @@ func FetchQubitsIBM(Qubitfilename string, NumberOfNewGeneratedFloats64 int64) []
 		QuantumFloats = append(QuantumFloats, value)
 	}
 
+	for i := NumberOfNewGeneratedFloats64; i < int64(len(QuantumFloatsString)); i = i * 16 {
+		NumberOfNewGeneratedFloats64 = i
+	}
+
 	QuantumFloats = append(QuantumFloats, GenerateMoreValues(NumberOfNewGeneratedFloats64-int64(len(QuantumFloatsString)), QuantumFloats)...)
 
 	Qte := int(len(QuantumFloats)/16) - 1
