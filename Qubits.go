@@ -1511,38 +1511,45 @@ func readFileIntoBytes(filePath string) ([]byte, error) {
 	return fileContent, nil
 }
 
-func FetchQubitsIBM(Qubitfilename string) [][]QubitRI {
+func FetchQubitsIBM(Qubitfilename string, NumberOfNewGeneratedFloats64 int64) [][]QubitRI {
 	var q1RI QubitRI
 	var q2RI QubitRI
 	var Combo []QubitRI
 	var Echoes [][]QubitRI
+	var QuantumFloats []float64
 	data, err := readFileIntoBytes(Qubitfilename)
 	if err != nil {
 		panic(err)
 	}
 
-	QuantumFloats := strings.Split(string(data), "\n")
+	QuantumFloatsString := strings.Split(string(data), "\n")
+	for i := 0; i < len(QuantumFloatsString); i++ {
+		value, _ := strconv.ParseFloat(QuantumFloatsString[i], 32)
+		QuantumFloats = append(QuantumFloats, value)
+	}
+
+	QuantumFloats = append(QuantumFloats, GenerateMoreValues(NumberOfNewGeneratedFloats64-int64(len(QuantumFloatsString)), QuantumFloats)...)
 
 	Qte := int(len(QuantumFloats)/16) - 1
 
 	for i := 0; i < Qte; i += 16 {
 
-		One, _ := strconv.ParseFloat(QuantumFloats[i], 32)
-		Two, _ := strconv.ParseFloat(QuantumFloats[i+1], 32)
-		Three, _ := strconv.ParseFloat(QuantumFloats[i+2], 32)
-		Four, _ := strconv.ParseFloat(QuantumFloats[i+3], 32)
-		Five, _ := strconv.ParseFloat(QuantumFloats[i+4], 32)
-		Six, _ := strconv.ParseFloat(QuantumFloats[i+5], 32)
-		Seven, _ := strconv.ParseFloat(QuantumFloats[i+6], 32)
-		Eight, _ := strconv.ParseFloat(QuantumFloats[i+7], 32)
-		Nine, _ := strconv.ParseFloat(QuantumFloats[i+8], 32)
-		Ten, _ := strconv.ParseFloat(QuantumFloats[i+9], 32)
-		Eleven, _ := strconv.ParseFloat(QuantumFloats[i+10], 32)
-		Twelve, _ := strconv.ParseFloat(QuantumFloats[i+11], 32)
-		Thirteen, _ := strconv.ParseFloat(QuantumFloats[i+12], 32)
-		Fourthteen, _ := strconv.ParseFloat(QuantumFloats[i+13], 32)
-		Fifthteen, _ := strconv.ParseFloat(QuantumFloats[i+14], 32)
-		Sixteen, _ := strconv.ParseFloat(QuantumFloats[i+15], 32)
+		One := QuantumFloats[i]
+		Two := QuantumFloats[i+1]
+		Three := QuantumFloats[i+2]
+		Four := QuantumFloats[i+3]
+		Five := QuantumFloats[i+4]
+		Six := QuantumFloats[i+5]
+		Seven := QuantumFloats[i+6]
+		Eight := QuantumFloats[i+7]
+		Nine := QuantumFloats[i+8]
+		Ten := QuantumFloats[i+9]
+		Eleven := QuantumFloats[i+10]
+		Twelve := QuantumFloats[i+11]
+		Thirteen := QuantumFloats[i+12]
+		Fourthteen := QuantumFloats[i+13]
+		Fifthteen := QuantumFloats[i+14]
+		Sixteen := QuantumFloats[i+15]
 
 		q1RI = QubitRI{
 			AlphaReal: One,
@@ -1586,9 +1593,9 @@ func ReadJSON(JSONfilename string) [][]QubitRI {
 	return lstQubit
 }
 
-func WriteQubits(JSONfilename string, QubitsFilename string) [][]QubitRI {
+func WriteQubits(JSONfilename string, QubitsFilename string, NbToBeGeneratedATopFromMean int64) [][]QubitRI {
 
-	Echoes := FetchQubitsIBM(QubitsFilename)
+	Echoes := FetchQubitsIBM(QubitsFilename, NbToBeGeneratedATopFromMean)
 
 	jsonData, err := json.Marshal(Echoes)
 	if err != nil {
@@ -1618,6 +1625,7 @@ func main() {
 	var Realq2 []float64
 	var Imagq1 []float64
 	var Imagq2 []float64
+	var GenerateFromMean int64 = 16 * 16 * 16 * 16 //65536 // 16777216 max Qubits Floats64 (run time)
 
 	flag.StringVar(&w, "w", "", "Write Qubits")
 	flag.StringVar(&i, "i", "", "IBM Qubits file")
@@ -1633,7 +1641,7 @@ func main() {
 	if w != "" {
 		JSON_OUT_FILENAME := w
 		IBM_Qubits_File := i
-		lstQubitsRI = WriteQubits(JSON_OUT_FILENAME, IBM_Qubits_File)
+		lstQubitsRI = WriteQubits(JSON_OUT_FILENAME, IBM_Qubits_File, GenerateFromMean)
 	} else {
 		if r != "" {
 			JSON_OUT_FILENAME := r
@@ -1941,4 +1949,61 @@ func NewFloatGenome(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2
 	}
 
 	return bpFinal
+}
+
+func calculateMean(values []float64) float64 {
+	var sum float64 = 0.0
+	for _, value := range values {
+		sum += value
+	}
+	return sum / float64(len(values))
+}
+
+func calculateSumOfSquareDeviations(values []float64, mean float64) float64 {
+	var sum float64 = 0.0
+	for _, value := range values {
+		sum += (value - mean) * (value - mean)
+	}
+	return sum
+}
+
+func calculateCovariance(x []float64, y []float64, meanX float64, meanY float64) float64 {
+	var sum float64 = 0.0
+	for i := 0; i < len(x); i++ {
+		sum += (x[i] - meanX) * (y[i] - meanY)
+	}
+	return sum / float64(len(x))
+}
+
+func calculateRegressionCoefficients(SSDX float64, SSDY float64, covariance float64, lenData float64, meanX float64, meanY float64) (float64, float64) {
+	b1 := covariance / SSDX
+	b0 := meanY - b1*meanX
+	return b0, b1
+}
+
+func InterpretNextY(b0 float64, b1 float64, x float64) float64 {
+	return b0 + (b1 * x)
+}
+
+func GenerateMoreValues(NumberOfNewValues int64, yValues []float64) []float64 {
+	var xValues []float64
+	var NewyValues []float64
+	meanY := calculateMean(yValues)
+	meanX := 1.0 //1 more cycle of throwing a Qubit. 1 more assumption.
+
+	for i := 1; i <= len(yValues); i++ {
+		xValues = append(xValues, float64(i))
+	}
+
+	SSDX := calculateSumOfSquareDeviations(xValues, meanX)
+	SSDY := calculateSumOfSquareDeviations(yValues, meanY)
+
+	covariance := calculateCovariance(xValues, yValues, meanX, meanY)
+
+	b0, b1 := calculateRegressionCoefficients(SSDX, SSDY, covariance, float64(len(xValues)), meanX, meanY)
+
+	for x := xValues[len(xValues)-1] + meanX; x <= float64(NumberOfNewValues); x++ {
+		NewyValues = append(NewyValues, InterpretNextY(b0, b1, x))
+	}
+	return NewyValues
 }
