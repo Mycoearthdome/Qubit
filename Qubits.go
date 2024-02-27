@@ -1620,6 +1620,17 @@ func WriteQubits(JSONfilename string, QubitsFilename string, NbToBeGeneratedATop
 	return Echoes
 }
 
+func float64ToBytes(data []float64) []byte {
+	var buf bytes.Buffer
+	for i := 0; i < len(data); i++ {
+		err := binary.Write(&buf, binary.LittleEndian, data[i])
+		if err != nil {
+			fmt.Println("binary.Write failed:", err)
+		}
+	}
+	return buf.Bytes()
+}
+
 func main() {
 	var lstQubitsRI [][]QubitRI
 	var w string
@@ -1680,6 +1691,192 @@ func main() {
 
 	ProduceGenePools(Realq1, Realq2, Imagq1, Imagq2)
 
+	data := float64ToBytes(Realq1)
+	var addFirst uint8 = 0
+	var addSecond uint8 = 0
+	var addThird uint8 = 0
+	var addFourth uint8 = 0
+	var addFifth uint8 = 0
+	var addSixth uint8 = 0
+	var addSeventh uint8 = 0
+	var addEight uint8 = 0
+	var addNinth uint8 = 0
+	var addTenth uint8 = 0
+	var addEleventh uint8 = 0
+	var addTwelfth uint8 = 0
+	var addThirteenth uint8 = 0
+	var addFourtheenth uint8 = 0
+	var addFifteenth uint8 = 0
+	var addSixteenth uint8 = 0
+	var addSeventeenth uint8 = 0
+	var addEighteenth uint8 = 0
+	var addNineteenth uint8 = 0
+	var addTwentieth uint8 = 0
+	var addTwentyFirst uint8 = 0
+
+	var TailRemoved = false
+	for j := 0; j < len(data); j++ {
+		var first uint8 = 1
+		var second uint8 = 1
+		var third uint8 = 1
+		var fourth uint8 = 1
+		var fifth uint8 = 1
+		var sixth uint8 = 1
+		var seventh uint8 = 1
+		var eight uint8 = 1
+		var nine uint8 = 1
+		var ten uint8 = 1
+		var eleven uint8 = 1
+		var twelve uint8 = 1
+		var thirteen uint8 = 1
+		var fourtheen uint8 = 1
+		var fifthteen uint8 = 1
+		var sixteen uint8 = 1
+		var seventeen uint8 = 1
+		var eighteen uint8 = 1
+		var nineteen uint8 = 1
+		var twenty uint8 = 1
+		var twentyOne uint8 = 1
+
+		if !TailRemoved {
+			for i := 0; i < len(data); i++ {
+				if i >= 7 {
+					first = uint8(data[i-7])
+					second = uint8(data[i-6])
+					third = uint8(data[i-5])
+					fourth = uint8(data[i-4])
+					fifth = uint8(data[i-3])
+					sixth = uint8(data[i-2])
+					seventh = uint8(data[i-1])
+					eight = uint8(data[i])
+
+					if (first+second+third == 0) || (second+third+fourth == 0) || (third+fourth+fifth == 0) || (fourth+fifth+sixth == 0) || (fifth+sixth+seventh == 0) || (sixth+seventh+eight == 0) {
+						i = i + 24
+						first = uint8(data[i-3])
+						second = uint8(data[i-2])
+						third = uint8(data[i-1])
+						if first+second+third == 0 {
+							first = 1
+							second = 1
+							third = 1
+							TailRemoved = true
+							//j = i
+							//Start = j
+
+							data = data[i:]                   // remove the trailing qubits information fron the previous DNA segment.
+							f, err := os.Create("Qubits.DAT") // to build the reference map with bin2png
+							if err != nil {
+								panic(err)
+							}
+							f.Write(data)
+							f.Close()
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if j%21 == 0 && j > 0 {
+			first = uint8(data[j-21])
+			second = uint8(data[j-20])
+			third = uint8(data[j-19])
+			fourth = uint8(data[j-18])
+			fifth = uint8(data[j-17])
+			sixth = uint8(data[j-16])
+			seventh = uint8(data[j-15])
+			eight = uint8(data[j-14])
+			nine = uint8(data[j-13])
+			ten = uint8(data[j-12])
+			eleven = uint8(data[j-11])
+			twelve = uint8(data[j-10])
+			thirteen = uint8(data[j-9])
+			fourtheen = uint8(data[j-8])
+			fifthteen = uint8(data[j-7])
+			sixteen = uint8(data[j-6])
+			seventeen = uint8(data[j-5])
+			eighteen = uint8(data[j-4])
+			nineteen = uint8(data[j-3])
+			twenty = uint8(data[j-2])
+			twentyOne = uint8(data[j-1])
+			addFirst += first
+			addSecond += second
+			addThird += third
+			addFourth += fourth
+			addFifth += fifth
+			addSixth += sixth
+			addSeventh += seventh
+			addEight += eight
+			addNinth += nine
+			addTenth += ten
+			addEleventh += eleven
+			addTwelfth += twelve
+			addThirteenth += thirteen
+			addFourtheenth += fourtheen
+			addFifteenth += fifthteen
+			addSixteenth += sixteen
+			addSeventeenth += seventeen
+			addEighteenth += eighteen
+			addNineteenth += nineteen
+			addTwentieth += twenty
+			addTwentyFirst += twentyOne
+
+			if (seventh + eight + nine) == 0 {
+				fmt.Printf("j:%d First-->%d\n", j/3, addFirst)
+				fmt.Printf("j:%d Second-->%d\n", j/3, addSecond)
+				fmt.Printf("j:%d third-->%d\n", j/3, addThird)
+				fmt.Printf("j:%d fourth-->%d\n", j/3, addFourth)
+				fmt.Printf("j:%d fifth-->%d\n", j/3, addFifth)
+				fmt.Printf("j:%d Sixth-->%d\n", j/3, addSixth)
+				fmt.Printf("j:%d Seventh-->%d\n", j/3, addSeventh)
+				fmt.Printf("j:%d Eight-->%d\n", j/3, addEight)
+				fmt.Printf("j:%d Nineth-->%d\n", j/3, addNinth)
+				fmt.Printf("j:%d Tenth-->%d\n", j/3, addTenth)
+				fmt.Printf("j:%d Eleventh-->%d\n", j/3, addEleventh)
+				fmt.Printf("j:%d Twelfth-->%d\n", j/3, addTwelfth)
+				fmt.Printf("j:%d Thirtennth-->%d\n", j/3, addThirteenth)
+				fmt.Printf("j:%d Fourtheenth-->%d\n", j/3, addFourtheenth)
+				fmt.Printf("j:%d Fiftheenth-->%d\n", j/3, addFifteenth)
+				fmt.Printf("j:%d Sixtheenth-->%d\n", j/3, addSixteenth)
+				fmt.Printf("j:%d Seventeenth-->%d\n", j/3, addSeventeenth)
+				fmt.Printf("j:%d Eighteenth-->%d\n", j/3, addEighteenth)
+				fmt.Printf("j:%d NineTeenth-->%d\n", j/3, addNineteenth)
+				fmt.Printf("j:%d Twentieth-->%d\n", j/3, addTwentieth)
+				fmt.Printf("j:%d TwentyFirst-->%d\n", j/3, addTwentyFirst)
+				fmt.Printf("TOTAL between 1 and 21 (exclusively) = %d\n\n", int(addSecond)+int(addThird)+int(addFourth)+int(addFifth)+int(addSixth)+int(addSeventh)+int(addEight)+int(addNinth)+int(addTenth)+int(addEleventh)+int(addTwelfth)+int(addThirteenth)+int(addFourtheenth)+int(addFifteenth)+int(addSixteenth)+int(addSeventeenth)+int(addEighteenth)+int(addNineteenth)+int(addTwentieth))
+			}
+			addFirst = 0
+			addSecond = 0
+			addThird = 0
+			addFourth = 0
+			addFifth = 0
+			addSixth = 0
+			addSeventh = 0
+			addEight = 0
+			addNinth = 0
+			addTenth = 0
+			addEleventh = 0
+			addTwelfth = 0
+			addThirteenth = 0
+			addFourtheenth = 0
+			addFifteenth = 0
+			addSixteenth = 0
+			addSeventeenth = 0
+			addEighteenth = 0
+			addNineteenth = 0
+			addTwentieth = 0
+			addTwentyFirst = 0
+
+		}
+	}
+	//fmt.Println("")
+
+	//f.Write(float64ToBytes(Realq1))
+	//f.Write(float64ToBytes(Realq2))
+	//f.Write(float64ToBytes(Imagq1))
+	//f.Write(float64ToBytes(Imagq2))
+
+	//f.Close()
 }
 
 func ProduceGenePools(Realq1 []float64, Realq2 []float64, Imagq1 []float64, Imagq2 []float64) string {
