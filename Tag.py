@@ -35,7 +35,6 @@ def read_Zero_Reference_File(file_path):
 for i, arg in enumerate(sys.argv):
     if i >= 1:
         input_files.append(arg)
-        print(arg)
 
 for file in input_files[:]:
 
