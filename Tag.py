@@ -28,7 +28,8 @@ def read_Zero_Reference_File(file_path):
         print(f"File not found: {file_path}")
         return None
 
-fasta_file_path = "GCF_000001405.40_GRCh38.p14_genomic.fna" #Human Genome - February 2022
+#fasta_file_path = "GCF_000001405.40_GRCh38.p14_genomic.fna" #Human Genome - February 2022
+fasta_file_path = "GCF_000001635.27_GRCm39_genomic.fna" #House Mouse Genome
 DNAZeroRefFile = "Qubits_Split.DNA"
 OutFile = "Freq_Matched_DNA.Zero"
 
@@ -60,15 +61,19 @@ for nucleotide in DNAsequence:
                     Aligned = True
                     AlignedIndex = i
     elif Aligned:
-        if ((nucleotideIndex + 1) < (len(DNAsequence) -1)):
+        if ((nucleotideIndex + 1) < (len(DNAsequence) -1)) and (AlignedIndex < len(ZeroDNAref) -1):
             if nucleotide == ZeroDNAref[AlignedIndex] and DNAsequence[nucleotideIndex+1] == ZeroDNAref[AlignedIndex+1]:
                 WaveLength = Count * NucleotideSize
                 Frequencies.append(Speed_of_Light/WaveLength)
                 #f.write("%d=|%s-%s|" % (Count, nucleotide, DNAsequence[nucleotideIndex+1]))
+                if AlignedIndex + 1 == len(ZeroDNAref) -1: #loop it back
+                    AlignedIndex = 0
+                else:
+                    AlignedIndex = AlignedIndex + 1
                 Count = 0
-                AlignedIndex = AlignedIndex + 1
-                if AlignedIndex + 1 == len(ZeroDNAref): #loop it back
-                    AlignedIndex = -1
+        elif AlignedIndex == len(ZeroDNAref)-1:
+            AlignedIndex = 0
+
         #else:
             #f.write("%d=|%s|--------|%s|" % (Count, nucleotide, DNAsequence[nucleotideIndex+1]))
     Count = Count + 1
