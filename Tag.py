@@ -29,7 +29,12 @@ def read_Zero_Reference_File(file_path):
         return None
 
 #fasta_file_path = "GCF_000001405.40_GRCh38.p14_genomic.fna" #Human Genome - February 2022
-fasta_file_path = "GCF_000001635.27_GRCm39_genomic.fna" #House Mouse Genome
+#fasta_file_path = "GCF_000001635.27_GRCm39_genomic.fna" #House Mouse Genome (https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/)
+#fasta_file_path = "Physarum_polycephalum_AB027295.1.fasta"
+#fasta_file_path = "Monkey_GCF_003339765.1_Mmul_10_genomic.fna"
+
+fasta_file_path = "YOUR FASTA FILENAME HERE!"
+
 DNAZeroRefFile = "Qubits_Split.DNA"
 OutFile = "Freq_Matched_DNA.Zero"
 
