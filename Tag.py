@@ -33,10 +33,11 @@ def read_Zero_Reference_File(file_path):
 
 
 for i, arg in enumerate(sys.argv):
-    if i >= 2:
+    if i >= 1:
         input_files.append(arg)
+        print(arg)
 
-for file in input_files:
+for file in input_files[:]:
 
     #fasta_file_path = "GCF_000001405.40_GRCh38.p14_genomic.fna" #Human Genome - February 2022
     #fasta_file_path = "GCF_000001635.27_GRCm39_genomic.fna" #House Mouse Genome (https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000001635.27/)
@@ -108,3 +109,4 @@ for file in input_files:
         f.write("Frequency=%f Count=%d\n" % (Frequency, sortedSpectrum[Frequency]))
 
     f.close()
+    print("Saved...%s" % (OutFile))
